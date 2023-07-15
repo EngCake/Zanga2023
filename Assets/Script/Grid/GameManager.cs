@@ -8,7 +8,7 @@ namespace CakeEngineering
     public class GameManager : MonoBehaviour
     {
         [SerializeField]
-        private List<GridState> _gridTimeline;
+        private List<LayerState> _gridTimeline;
 
         [SerializeField]
         private int _timeIndex = 0;
@@ -35,7 +35,7 @@ namespace CakeEngineering
 
         private bool _lock;
 
-        private List<Entity> _entities;
+        private List<Entity> _allEntities;
 
         private bool _isInSelectState;
 
@@ -55,8 +55,8 @@ namespace CakeEngineering
         private void Start()
         {
             var entities = GetComponentsInChildren<Entity>();
-            _entities = entities.ToList();
-            var initialState = new GridState(entities);
+            _allEntities = entities.ToList();
+            var initialState = new LayerState(entities);
             _gridTimeline.Add(initialState);
             _selectBox.SetActive(false);
             UpdateAllEntities();
@@ -181,19 +181,19 @@ namespace CakeEngineering
         private void CreateNextState()
         {
             if (_timeIndex + 1 < _gridTimeline.Count)
-                _gridTimeline[_timeIndex + 1] = (GridState)_gridTimeline[_timeIndex].Clone();
+                _gridTimeline[_timeIndex + 1] = (LayerState)_gridTimeline[_timeIndex].Clone();
             else
-                _gridTimeline.Add((GridState)_gridTimeline[_timeIndex].Clone());
+                _gridTimeline.Add((LayerState)_gridTimeline[_timeIndex].Clone());
         }
 
         private void UpdateAllEntities()
         {
-            _entities.ForEach(entity => entity.UpdateCurrentState());
+            _allEntities.ForEach(entity => entity.UpdateCurrentState());
         }
 
-        public GridState CurrentGridState => _gridTimeline[_timeIndex];
+        public LayerState CurrentGridState => _gridTimeline[_timeIndex];
 
-        public GridState NextGridState => _gridTimeline[_timeIndex + 1];
+        public LayerState NextGridState => _gridTimeline[_timeIndex + 1];
 
         public Entity SelectedEntity => _selectedEntity;
     }

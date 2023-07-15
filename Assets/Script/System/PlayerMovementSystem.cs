@@ -4,20 +4,20 @@ namespace CakeEngineering
 {
     public class PlayerMovementSystem : EntityAttributeSystem
     {
-        private GridState _currentState;
+        private LayerState _currentState;
 
-        private GridState _nextState;
+        private LayerState _nextState;
 
         public override void Process(Vector2 playerMovement)
         {
-            _currentState = (GridState)_gameManager.NextGridState.Clone();
+            _currentState = (LayerState)_gameManager.NextGridState.Clone();
             _nextState = _gameManager.NextGridState;
             var playerPosition = _currentState.PlayerState.Position;
             if (CanMoveEntity(playerPosition, playerMovement))
                 MoveEntity(playerPosition, playerMovement);
         }
 
-        public bool CanMoveEntity(Vector2 entityPosition, Vector2 movement)
+        private bool CanMoveEntity(Vector2 entityPosition, Vector2 movement)
         {
             var nextPosition = entityPosition + movement;
             if (!_currentState.HasEntityAt(nextPosition))
@@ -29,7 +29,7 @@ namespace CakeEngineering
             return false;
         }
 
-        public void MoveEntity(Vector2 entityPosition, Vector2 movement)
+        private void MoveEntity(Vector2 entityPosition, Vector2 movement)
         {
             var previousEntity = (EntityState)null;
             var currentPosition = entityPosition;

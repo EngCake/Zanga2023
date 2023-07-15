@@ -9,7 +9,7 @@ namespace CakeEngineering
 
         public override void Process(Vector2 playerMovement)
         {
-            var currentState = (GridState) _gameManager.NextGridState.Clone();
+            var currentState = (LayerState) _gameManager.NextGridState.Clone();
             var nextState = _gameManager.NextGridState;
             foreach (var entityState in currentState.FindByAttribute("Burning"))
             {
