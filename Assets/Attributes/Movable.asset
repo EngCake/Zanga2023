@@ -12,6 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 86a5ae030e0d41d499e9302a7cc7ae8b, type: 3}
   m_Name: Movable
   m_EditorClassIdentifier: 
-  iterationIndex: -1
-  attributeName: Movable
-  description: 
+  IterationIndex: 0
+  Name: Movable
+  Description: 
