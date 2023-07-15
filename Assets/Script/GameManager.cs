@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -7,13 +8,14 @@ namespace CakeEngineering
 {
     public class GameManager : MonoBehaviour
     {
-        private static readonly int ITERATIONS_COUNT = 3;
-
         [SerializeField]
         private List<GridState> _gridTimeline;
 
         [SerializeField]
         private int _timeIndex = 0;
+
+        [SerializeField]
+        private List<EntityAttributeSystem> _systems;
 
         private PlayerInput _playerInput;
 
@@ -56,9 +58,9 @@ namespace CakeEngineering
             {
                 _gridTimeline.Add((GridState) _gridTimeline.Last().Clone());
                 MovePlayer(moveDirection);
-                for (var iterationIndex = 0; iterationIndex < ITERATIONS_COUNT; iterationIndex++)
-                    UpdateEntities(iterationIndex);
-                _gridTimeline.Last().UpdateAllEntities();
+                foreach (var system in _systems)
+                    system.Process();
+                UpdateAllEntities();
                 Lock();
                 _timeIndex++;
             } else if (!_lock && _undo.IsPressed() && _gridTimeline.Count > 1)
@@ -70,8 +72,23 @@ namespace CakeEngineering
             }
         }
 
-        private void UpdateEntities(int iterationIndex)
+        private void UpdateAllEntities()
         {
+            NextGridState.UpdateAllEntities();
+            foreach (var entity in CurrentGridState)
+            {
+                if (!NextGridState.Any(entityState => entityState.Entity == entity.Entity))
+                {
+                    entity.Entity.Hide();
+                }
+            }
+            foreach (var entity in NextGridState)
+            {
+                if (!CurrentGridState.Any(entityState => entityState.Entity == entity.Entity))
+                {
+                    entity.Entity.Show();
+                }
+            }
         }
 
         public void MovePlayer(Vector2 playerMovement)
@@ -107,7 +124,7 @@ namespace CakeEngineering
             {
                 var temp = _gridTimeline[_timeIndex + 1][currentPosition];
                 _gridTimeline[_timeIndex + 1][currentPosition] = previousEntity;
-                previousEntity = temp.MovedCopy(currentPosition + movement);
+                previousEntity = temp.WithNewPosition(currentPosition + movement);
                 currentPosition += movement;
             }
             _gridTimeline[_timeIndex + 1][currentPosition] = previousEntity;

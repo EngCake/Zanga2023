@@ -9,5 +9,14 @@ namespace CakeEngineering
 
         [TextArea]
         public string Description;
+
+        public bool Locked;
+
+        public EntityAttribute(string name, string description, bool locked)
+        {
+            Name = name;
+            Description = description;
+            Locked = locked;
+        }
     }
 }

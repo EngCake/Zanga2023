@@ -13,10 +13,23 @@ namespace CakeEngineering
 
         private EntityState _initialState;
 
+        private SpriteRenderer _spriteRenderer;
+
         private void Awake()
         {
             _transform = GetComponent<Transform>();
             _initialState = new EntityState(this, _initialAttributes);
+            _spriteRenderer = GetComponent<SpriteRenderer>();
+        }
+
+        public void Hide()
+        {
+            LeanTween.color(gameObject, Color.clear, 0.2f);
+        }
+
+        public void Show()
+        {
+            LeanTween.color(gameObject, Color.white, 0.2f);
         }
 
         public void SetPosition(Vector2 position)

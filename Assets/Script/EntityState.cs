@@ -29,6 +29,8 @@ namespace CakeEngineering
 
         public Vector2 Position => _position;
 
+        public Entity Entity => _entity;
+
         private EntityState(Entity entity, bool isActive = true)
         {
             _isActive = isActive;
@@ -82,9 +84,17 @@ namespace CakeEngineering
             _entity.SetPosition(_position);
         }
         
-        public EntityState MovedCopy(Vector2 position)
+        public EntityState WithNewPosition(Vector2 position)
         {
             return new EntityState(_isActive, _type, _name, _attributes, _entity, position);
+        }
+
+        public EntityState WithAttribute(EntityAttribute attribute)
+        {
+            var attributes = new List<EntityAttribute>();
+            _attributes.ForEach(attribute => attributes.Add(attribute));
+            attributes.Add(attribute);
+            return new EntityState(_isActive, _type, _name, attributes, _entity, _position);
         }
     }
 
