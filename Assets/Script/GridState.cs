@@ -1,31 +1,13 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace CakeEngineering
 {
-    public struct GridStateItem
-    {
-        private Vector2 _position;
-
-        private EntityState _state;
-
-        public GridStateItem(Vector2 Position, EntityState State)
-        {
-            _position = Position;
-            _state = State;
-        }
-
-        public void Deconstruct(out Vector2 position, out EntityState state)
-        {
-            position = _position;
-            state = _state;
-        }
-    }
-
     [Serializable]
-    public class GridState : ICloneable, IEnumerable<GridStateItem>
+    public class GridState : ICloneable, IEnumerable<EntityState>
     {
         private readonly Dictionary<Vector2, EntityState> _grid;
 
@@ -73,21 +55,39 @@ namespace CakeEngineering
             return clone;
         }
 
-        public void MoveAllEntities()
+        public void UpdateAllEntities()
         {
-            foreach (var (position, entity) in _grid)
-                entity.MoveEntity(position);
+            foreach (var (_, entity) in _grid)
+                entity.UpdateEntity();
         }
 
-        public IEnumerator<GridStateItem> GetEnumerator()
+        public IEnumerator<EntityState> GetEnumerator()
         {
-            foreach (var (position, entity) in _grid)
-                yield return new GridStateItem(position, entity);
+            foreach (var (_, entityState) in _grid)
+                yield return entityState;
         }
 
         IEnumerator IEnumerable.GetEnumerator()
         {
             return GetEnumerator();
+        }
+
+        public IEnumerable<EntityState> FindByAttribute(string attribute)
+        {
+            return this.Where(entityState => entityState.HasAttribute(attribute));
+        }
+
+        public List<EntityState> GetAdjacent4(Vector2 position)
+        {
+            var deltas = new List<Vector2> { Vector2.up, Vector2.down, Vector2.left, Vector2.right };
+            var result = new List<EntityState>();
+            foreach (var direction in deltas)
+            {
+                var nextPosition = position + direction;
+                if (_grid.ContainsKey(nextPosition))
+                    result.Add(_grid[nextPosition]);
+            }
+            return result;
         }
     }
 }

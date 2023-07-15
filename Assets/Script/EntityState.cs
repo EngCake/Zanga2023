@@ -9,20 +9,17 @@ namespace CakeEngineering
     [Serializable]
     public class EntityState : IEnumerable<EntityAttribute>, ICloneable
     {
-        [SerializeField]
-        private bool _isActive;
+        private readonly bool _isActive;
 
-        [SerializeField]
-        private EntityType _type;
+        private readonly EntityType _type;
 
-        [SerializeField]
-        private string _name;
+        private readonly string _name;
 
-        [SerializeField]
-        private List<EntityAttribute> _attributes;
+        private readonly List<EntityAttribute> _attributes;
 
-        [SerializeField]
-        private Entity _entity;
+        private readonly Entity _entity;
+
+        private readonly Vector2 _position;
 
         public bool Active => _isActive;
 
@@ -30,18 +27,32 @@ namespace CakeEngineering
 
         public EntityType Type => _type;
 
-        private EntityState(Entity entity)
+        public Vector2 Position => _position;
+
+        private EntityState(Entity entity, bool isActive = true)
         {
-            _isActive = true;
+            _isActive = isActive;
             _attributes = new List<EntityAttribute>();
             _entity = entity;
+            _position = entity.Position;
         }
 
-        public EntityState(Entity entity, List<EntityAttribute> attributes)
+        private EntityState(bool isActive, EntityType type, string name, List<EntityAttribute> attributes, Entity entity, Vector2 position)
         {
-            _isActive = true;
+            _isActive = isActive;
+            _type = type;
+            _name = name;
             _attributes = attributes;
             _entity = entity;
+            _position = position;
+        }
+
+        public EntityState(Entity entity, List<EntityAttribute> attributes, bool isActive = true)
+        {
+            _isActive = isActive;
+            _attributes = attributes;
+            _entity = entity;
+            _position = entity.Position;
         }
 
         public bool HasAttribute(string attributeName)
@@ -61,16 +72,19 @@ namespace CakeEngineering
 
         public object Clone()
         {
-            var clone = new EntityState(_entity);
-            clone._isActive = _isActive;
+            var clone = new EntityState(_entity, _isActive);
             _attributes.ForEach(attribute => clone._attributes.Add(attribute));
             return clone;
         }
 
-        public void MoveEntity(Vector2 position)
+        public void UpdateEntity()
         {
-            if (position != _entity.Position)
-                _entity.SetPosition(position);
+            _entity.SetPosition(_position);
+        }
+        
+        public EntityState MovedCopy(Vector2 position)
+        {
+            return new EntityState(_isActive, _type, _name, _attributes, _entity, position);
         }
     }
 

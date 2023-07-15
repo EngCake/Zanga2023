@@ -58,13 +58,13 @@ namespace CakeEngineering
                 MovePlayer(moveDirection);
                 for (var iterationIndex = 0; iterationIndex < ITERATIONS_COUNT; iterationIndex++)
                     UpdateEntities(iterationIndex);
-                _gridTimeline.Last().MoveAllEntities();
+                _gridTimeline.Last().UpdateAllEntities();
                 Lock();
                 _timeIndex++;
             } else if (!_lock && _undo.IsPressed() && _gridTimeline.Count > 1)
             {
                 _gridTimeline.RemoveAt(_gridTimeline.Count - 1);
-                _gridTimeline.Last().MoveAllEntities();
+                _gridTimeline.Last().UpdateAllEntities();
                 Lock();
                 _timeIndex--;
             }
@@ -76,12 +76,12 @@ namespace CakeEngineering
 
         public void MovePlayer(Vector2 playerMovement)
         {
-            foreach (var (position, entityState) in _gridTimeline[_timeIndex])
+            foreach (var entityState in _gridTimeline[_timeIndex])
             {
                 if (entityState.HasAttribute("Player"))
                 {
-                    if (CanMoveEntity(position, playerMovement))
-                        MoveEntity(position, playerMovement);
+                    if (CanMoveEntity(entityState.Position, playerMovement))
+                        MoveEntity(entityState.Position, playerMovement);
                     return;
                 }
             }
@@ -107,10 +107,14 @@ namespace CakeEngineering
             {
                 var temp = _gridTimeline[_timeIndex + 1][currentPosition];
                 _gridTimeline[_timeIndex + 1][currentPosition] = previousEntity;
-                previousEntity = temp;
+                previousEntity = temp.MovedCopy(currentPosition + movement);
                 currentPosition += movement;
             }
             _gridTimeline[_timeIndex + 1][currentPosition] = previousEntity;
         }
+
+        public GridState CurrentGridState => _gridTimeline[_timeIndex];
+
+        public GridState NextGridState => _gridTimeline[_timeIndex + 1];
     }
 }
