@@ -4,13 +4,13 @@ namespace CakeEngineering
 {
     public class PlayerMovementSystem : EntityAttributeSystem
     {
-        private LayerState _currentState;
+        private GridState _currentState;
 
-        private LayerState _nextState;
+        private GridState _nextState;
 
         public override void Process(Vector2 playerMovement)
         {
-            _currentState = (LayerState)_gameManager.CurrentGridState.Clone();
+            _currentState = (GridState)_gameManager.CurrentGridState.Clone();
             _nextState = _gameManager.CurrentGridState;
             var playerPosition = _currentState.PlayerState.Position;
             if (CanMoveEntity(playerPosition, playerMovement))

@@ -9,13 +9,23 @@ namespace CakeEngineering
     [Serializable]
     public class EntityState : IEnumerable<EntityAttribute>, ICloneable
     {
+        private readonly bool _isActive;
+
+        private readonly EntityType _type;
+
+        private readonly string _name;
+
         private readonly List<EntityAttribute> _attributes;
 
         private readonly Entity _entity;
 
         private readonly Vector2 _position;
 
-        private readonly Layer _layer;
+        public bool Active => _isActive;
+
+        public string Name => _name;
+
+        public EntityType Type => _type;
 
         public Vector2 Position => _position;
 
@@ -23,14 +33,14 @@ namespace CakeEngineering
 
         public List<EntityAttribute> Attributes => _attributes;
 
-        public Layer Layer => _layer;
-
-        public EntityState(Entity entity, List<EntityAttribute> attributes, Vector2 position, Layer layer)
+        public EntityState(bool isActive, EntityType type, string name, List<EntityAttribute> attributes, Entity entity, Vector2 position)
         {
-            _entity = entity;
+            _isActive = isActive;
+            _type = type;
+            _name = name;
             _attributes = attributes;
+            _entity = entity;
             _position = position;
-            _layer = layer;
         }
 
         public bool HasAttribute(string attributeName)
@@ -51,14 +61,14 @@ namespace CakeEngineering
         public object Clone()
         {
             var attributes = new List<EntityAttribute>();
-            var clone = new EntityState(_entity, attributes, _position, _layer);
+            var clone = new EntityState(_isActive, _type, _name, attributes, _entity, _position);
             _attributes.ForEach(attribute => clone._attributes.Add(attribute));
             return clone;
         }
         
         public EntityState WithNewPosition(Vector2 position)
         {
-            return new EntityState(_entity, _attributes, position, _layer);
+            return new EntityState(_isActive, _type, _name, _attributes, _entity, position);
         }
 
         public EntityState WithAttribute(EntityAttribute attribute)
@@ -68,7 +78,7 @@ namespace CakeEngineering
             var attributes = new List<EntityAttribute>();
             _attributes.ForEach(attribute => attributes.Add(attribute));
             attributes.Add(attribute);
-            return new EntityState(_entity, attributes, _position, _layer);
+            return new EntityState(_isActive, _type, _name, attributes, _entity, _position);
         }
 
         public EntityState WithoutAttribute(EntityAttribute attribute)
@@ -77,7 +87,7 @@ namespace CakeEngineering
             foreach (var attr in _attributes)
                 if (attr.Name != attribute.Name)
                     attributes.Add(attr);
-            return new EntityState(_entity, attributes, _position, _layer);
+            return new EntityState(_isActive, _type, _name, attributes, _entity, _position);
         }
     }
 

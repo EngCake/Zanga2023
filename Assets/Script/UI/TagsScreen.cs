@@ -72,15 +72,15 @@ namespace CakeEngineering
 
         private void Redraw()
         {
-            var firstEntityState = _gameManager.CurrentGridState.FindStateOfEntity(firstEntity);
-            var secondEntityState = _gameManager.CurrentGridState.FindStateOfEntity(secondEntity);
+            var firstEntityState = _gameManager.CurrentGridState.FindState(firstEntity);
+            var secondEntityState = _gameManager.CurrentGridState.FindState(secondEntity);
             firstListText.text = DrawEntityList(firstEntityState, FIRST_COLUMN);
             secondListText.text = DrawEntityList(secondEntityState, SECOND_COLUMN);
         }
 
         private string DrawEntityList(EntityState entityState, int column)
         {
-            var name = entityState.Entity.Name;
+            var name = entityState.Name;
             var attributes = entityState.Attributes;
             var listText = new StringBuilder($"<size=60>{name}</size>\n\n");
             for (var i = 0; i < attributes.Count; i++)
@@ -162,8 +162,8 @@ namespace CakeEngineering
             }
             else if (!_lock && _select.IsPressed() && _cursor != null)
             {
-                var firstEntityState = _gameManager.CurrentGridState.FindStateOfEntity(firstEntity);
-                var secondEntityState = _gameManager.CurrentGridState.FindStateOfEntity(secondEntity);
+                var firstEntityState = _gameManager.CurrentGridState.FindState(firstEntity);
+                var secondEntityState = _gameManager.CurrentGridState.FindState(secondEntity);
                 var attributesList = _cursor.Column == FIRST_COLUMN ? firstEntityState.Attributes : secondEntityState.Attributes;
                 var selectedAttribute = attributesList[_cursor.Row];
                 if (_cursor.Column == FIRST_COLUMN)
@@ -172,7 +172,7 @@ namespace CakeEngineering
                     var modifiedSecondEntity = secondEntityState.WithAttribute(selectedAttribute);
                     if (modifiedSecondEntity != null && modifiedFirstEntity != null)
                     {
-                        _gameManager.CurrentGridState[secondEntityState.Entity.Position] = modifiedSecondEntity;
+                        _gameManager.CurrentGridState[secondEntityState.Position] = modifiedSecondEntity;
                         _gameManager.CurrentGridState[firstEntityState.Position] = modifiedFirstEntity;
                         _dirty = true;
                         _cursor =   FindValidCursorPosition(FIRST_COLUMN, _cursor.Column, 1) ??
@@ -214,8 +214,8 @@ namespace CakeEngineering
 
         private Cursor FindValidCursorPosition(int column, int fromRow = 0, int direction = 1)
         {
-            var firstEntityState = _gameManager.CurrentGridState.FindStateOfEntity(firstEntity);
-            var secondEntityState = _gameManager.CurrentGridState.FindStateOfEntity(secondEntity);
+            var firstEntityState = _gameManager.CurrentGridState.FindState(firstEntity);
+            var secondEntityState = _gameManager.CurrentGridState.FindState(secondEntity);
             var attributesList = column == FIRST_COLUMN ? firstEntityState.Attributes : secondEntityState.Attributes;
             for (var i = Mathf.Clamp(fromRow, 0, attributesList.Count - 1); i < attributesList.Count && i >= 0; i += direction)
                 if (attributesList[i].Active && !attributesList[i].Locked)
