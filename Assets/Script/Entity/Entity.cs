@@ -12,15 +12,18 @@ namespace CakeEngineering
         [SerializeField]
         private EntityType _entityType;
 
+        [SerializeField]
+        private Layer _layer;
+
+        [SerializeField]
+        private List<EntityAttribute> _initialAttributes;
+
         [Header("Sprites")]
         [SerializeField]
         private Sprite _normalSprite;
 
         [SerializeField]
         private Sprite _burningSprite;
-
-        [SerializeField]
-        private List<EntityAttribute> _initialAttributes;
 
         private Transform _transform;
 
@@ -35,7 +38,7 @@ namespace CakeEngineering
         private void Awake()
         {
             _transform = GetComponent<Transform>();
-            _initialState = new EntityState(true, _entityType, _entityName, _initialAttributes, this, Position);
+            _initialState = new EntityState(this, _initialAttributes, Position, _layer);
             _currentState = _initialState;
             _spriteRenderer = GetComponent<SpriteRenderer>();
             _spriteRenderer.sprite = _normalSprite;
@@ -44,7 +47,7 @@ namespace CakeEngineering
 
         public void UpdateCurrentState()
         {
-            var state = _gameManager.CurrentGridState.FindState(this);
+            var state = _gameManager.CurrentGridState.FindStateOfEntity(this);
             if (state == null && _currentState != null)
             {
                 LeanTween.color(gameObject, Color.clear, 0.2f);
@@ -63,8 +66,12 @@ namespace CakeEngineering
 
         public Vector2 Position => _transform.position;
 
-        public EntityState InitialState => _initialState;
+        public string Name => _entityName;
 
-        public EntityState CurrentState => _currentState;
+        public EntityType EntityType => _entityType;
+
+        public Layer Layer => _layer;
+
+        public EntityState InitialState => _initialState;
     }
 }

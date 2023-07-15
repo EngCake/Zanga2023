@@ -1,10 +1,41 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System.Text;
+using TMPro;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.Rendering;
+using static UnityEditorInternal.VersionControl.ListControl;
 
 namespace CakeEngineering
 {
+    enum HUD
+    {
+        None,
+        SelectEntity,
+        SelectFromMultiple
+    }
+
+    class GameState
+    {
+        public HUD HUD;
+
+        public Vector2 SelectDirection;
+
+        public int SelectIndex;
+
+        public List<EntityState> EntitiesStates;
+
+        public GameState()
+        {
+            HUD = HUD.None;
+            SelectDirection = Vector2.zero;
+            SelectIndex = 0;
+            EntitiesStates = new List<EntityState>();
+        }
+    }
+
     public class GameManager : MonoBehaviour
     {
         [SerializeField]
@@ -15,6 +46,9 @@ namespace CakeEngineering
 
         [SerializeField]
         private GameObject _selectBox;
+
+        [SerializeField]
+        private TMP_Text _entitiesSelector;
 
         private History<GridState> _gridHistory;
 
@@ -30,9 +64,7 @@ namespace CakeEngineering
 
         private List<Entity> _entities;
 
-        private bool _isInSelectState;
-
-        private Vector2 _selectDirection;
+        private GameState _gameState;
 
         private void Awake()
         {
@@ -41,8 +73,7 @@ namespace CakeEngineering
             _move = _playerInput.Player.Move;
             _undo = _playerInput.Player.Undo;
             _select = _playerInput.Player.Select;
-            _isInSelectState = false;
-            _selectDirection = Vector2.zero;
+            _gameState = new GameState();
             _gridHistory = new History<GridState>();
         }
 
@@ -50,8 +81,7 @@ namespace CakeEngineering
         {
             var entities = GetComponentsInChildren<Entity>();
             _entities = entities.ToList();
-            var initialState = new GridState(entities);
-            _gridHistory.CreateNext(initialState);
+            _gridHistory.CreateNext(GridState.InitializeFromEntities(entities));
             _selectBox.SetActive(false);
             UpdateAllEntities();
         }
@@ -96,60 +126,109 @@ namespace CakeEngineering
             var playerMovement = _move.ReadValue<Vector2>();
             if (!_lock && playerMovement != Vector2.zero && (playerMovement.x == 0 || playerMovement.y == 0))
             {
-                if (!_isInSelectState)
+                if (_gameState.HUD == HUD.None)
                 {
-                    _gridHistory.CreateNext((GridState) _gridHistory.Current.Clone());
+                    _gridHistory.CreateNext((LayerState) _gridHistory.Current.Clone());
                     RunAllSystems(playerMovement);
                     UpdateAllEntities();
                     Lock();
                 }
-                else
+                else if (_gameState.HUD == HUD.SelectEntity)
                 {
                     var playerPosition = CurrentGridState.PlayerState.Position;
-                    if (CurrentGridState.HasEntityAt(playerPosition + playerMovement))
+                    var statesOfEntitesAtPosition = CurrentGridState.StatesOfEntitesAt(playerPosition + playerMovement);
+                    if (statesOfEntitesAtPosition.Count > 0)
                     {
                         if (!_selectBox.activeSelf)
                             _selectBox.SetActive(true);
-                        _selectDirection = playerMovement;
-                        _selectBox.transform.position = playerPosition + _selectDirection;
+                        _gameState.SelectDirection = playerMovement;
+                        _selectBox.transform.position = playerPosition + playerMovement;
                         Lock();
                     }
+                }
+                else
+                {
+                    if (playerMovement == Vector2.up && _gameState.SelectIndex > 0)
+                        _gameState.SelectIndex--;
+                    else if (playerMovement == Vector2.down && _gameState.SelectIndex + 1 < _gameState.EntitiesStates.Count)
+                        _gameState.SelectIndex++;
                 }
             }
             else if (!_lock && _undo.IsPressed())
             {
-                if (!_isInSelectState && _gridHistory.TryUndo())
+                if (_gameState.HUD == HUD.None && _gridHistory.TryUndo())
                 {
-                    Lock();
                     UpdateAllEntities();
+                    Lock();
+                }
+                else if (_gameState.HUD == HUD.SelectEntity)
+                {
+                    _gameState.HUD = HUD.None;
+                    _selectBox.SetActive(false);
+                    Lock();
                 }
                 else
                 {
-                    _isInSelectState = false;
-                    _selectBox.SetActive(false);
+                    _gameState.HUD = HUD.SelectEntity;
+                    _selectBox.SetActive(true);
+                    _entitiesSelector.gameObject.SetActive(false);
                     Lock();
                 }
             }
             else if (!_lock && _select.IsPressed())
             {
-                if (_isInSelectState && _selectDirection != Vector2.zero)
+                if (_gameState.HUD == HUD.None)
+                {
+                    _gameState.SelectDirection = Vector2.zero;
+                    _gameState.HUD = HUD.SelectEntity;
+                    Lock();
+                }
+                else if (_gameState.HUD == HUD.SelectEntity)
                 {
                     var playerPosition = CurrentGridState.PlayerState.Position;
                     _tagsScreen.firstEntity = CurrentGridState.PlayerState.Entity;
-                    _tagsScreen.secondEntity = CurrentGridState[playerPosition + _selectDirection].Entity;
-                    _gridHistory.CreateNext((GridState) _gridHistory.Current.Clone());
-                    DisablePlayerControler();
-                    _tagsScreen.gameObject.SetActive(true);
-                    _selectBox.SetActive(false);
-                    _isInSelectState = false;
+                    var statesOfEntitiesAtPosition = CurrentGridState.StatesOfEntitesAt(playerPosition + _gameState.SelectDirection);
+                    if (statesOfEntitiesAtPosition.Count == 1)
+                    {
+                        _tagsScreen.secondEntity = statesOfEntitiesAtPosition[0].Entity;
+                        _gridHistory.CreateNext((LayerState)_gridHistory.Current.Clone());
+                        DisablePlayerControler();
+                        _tagsScreen.gameObject.SetActive(true);
+                        _selectBox.SetActive(false);
+                        _gameState.HUD = HUD.None;
+                    }
+                    else
+                    {
+                        _gameState.HUD = HUD.SelectFromMultiple;
+                        _gameState.EntitiesStates = statesOfEntitiesAtPosition;
+                        _selectBox.SetActive(false);
+                        _entitiesSelector.gameObject.SetActive(true);
+                    }
                 }
                 else
                 {
-                    _selectDirection = Vector2.zero;
-                    _isInSelectState = true;
-                    Lock();
+                    _tagsScreen.firstEntity = CurrentGridState.PlayerState.Entity;
+                    _tagsScreen.secondEntity = _gameState.EntitiesStates[_gameState.SelectIndex].Entity;
+                    _gridHistory.CreateNext((LayerState)_gridHistory.Current.Clone());
+                    DisablePlayerControler();
+                    _tagsScreen.gameObject.SetActive(true);
+                    _entitiesSelector.gameObject.SetActive(false);
+                    _gameState.HUD = HUD.None;
                 }
             }
+        }
+
+        private void RedrawMultiupleSelector()
+        {
+            var entitiesList = new StringBuilder();
+            for (var i = 0; i < _gameState.EntitiesStates.Count; i++)
+            {
+                var entityState = _gameState.EntitiesStates[i];
+                var openingTag = i == _gameState.SelectIndex ? "<color=yellow>" : "";
+                var closingTag = i == _gameState.SelectIndex ? "</color>" : "";
+                entitiesList.AppendLine($" - {openingTag}{entityState.Entity.Name}{closingTag}");
+            }
+            _entitiesSelector.text = entitiesList.ToString();
         }
 
         public void Undo()

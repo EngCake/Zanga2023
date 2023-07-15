@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -7,88 +6,79 @@ using UnityEngine;
 namespace CakeEngineering
 {
     [Serializable]
-    public class GridState : ICloneable, IEnumerable<EntityState>
+    public enum Layer
     {
-        private readonly Dictionary<Vector2, EntityState> _grid;
+        Ground,
+        Objects,
+        Sky
+    }
+
+    public class GridState : ICloneable
+    {
+        private readonly LayerState[] _layersStates;
 
         private GridState()
         {
-            _grid = new Dictionary<Vector2, EntityState>();
+            _layersStates = new LayerState[3];
+            for (var i = 0; i < 3; i++)
+                _layersStates[i] = new LayerState();
         }
 
-        public GridState(Entity[] entities)
+        public static GridState InitializeFromEntities(Entity[] entities)
         {
-            _grid = new Dictionary<Vector2, EntityState>();
+            var gridState = new GridState();
             foreach (var entity in entities)
-            {
-                _grid[entity.Position] = entity.InitialState;
-            }
+                gridState._layersStates[(int)entity.Layer][entity.Position] = entity.InitialState;
+            return gridState;
         }
 
-        public EntityState this[Vector2 position]
+        public LayerState this[Layer layer]
         {
             get
             {
-                return _grid[position];
-            }
-            set
-            {
-                if (value != null)
-                    _grid[position] = value;
-                else
-                    _grid.Remove(position);
+                return _layersStates[(int)layer];
             }
         }
 
-        public bool HasEntityAt(Vector2 position)
+        public EntityState PlayerState
         {
-            return _grid.ContainsKey(position);
+            get
+            {
+                foreach (var layerState in _layersStates)
+                {
+                    var player = layerState.FindByAttribute("Player").FirstOrDefault();
+                    if (player != null)
+                        return player;
+                }
+                return null;
+            }
+        }
+
+        public EntityState FindStateOfEntity(Entity entity)
+        {
+            foreach (var layerState in _layersStates)
+            {
+                var entityState = layerState.FindStateOfEntity(entity);
+                if (entityState != null) return entityState;
+            }
+            return null;
+        }
+
+        public List<EntityState> StatesOfEntitesAt(Vector2 position)
+        {
+            var entities = new List<EntityState>();
+            foreach (var layerState in _layersStates)
+                if (layerState.HasEntityAt(position))
+                    entities.Add(layerState[position]);
+            return entities;
         }
 
         public object Clone()
         {
             var clone = new GridState();
-            foreach (var (position, entityState) in _grid)
-            {
-                clone._grid[position] = (EntityState) entityState.Clone();
-            }
+            for (var i = 0; i < 3; i++)
+                clone._layersStates[i] = (LayerState) _layersStates[i].Clone();
             return clone;
         }
-
-        public IEnumerator<EntityState> GetEnumerator()
-        {
-            foreach (var (_, entityState) in _grid)
-                yield return entityState;
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
-
-        public IEnumerable<EntityState> FindByAttribute(string attribute)
-        {
-            return this.Where(entityState => entityState.HasAttribute(attribute));
-        }
-
-        public List<EntityState> GetAdjacent4(Vector2 position)
-        {
-            var deltas = new List<Vector2> { Vector2.up, Vector2.down, Vector2.left, Vector2.right };
-            var result = new List<EntityState>();
-            foreach (var direction in deltas)
-            {
-                var nextPosition = position + direction;
-                if (_grid.ContainsKey(nextPosition))
-                    result.Add(_grid[nextPosition]);
-            }
-            return result;
-        }
-
-        public EntityState FindState(Entity entity)
-        {
-            return this.FirstOrDefault(entityState => entityState.Entity == entity);
-        }
-
-        public EntityState PlayerState => this.First(entityState => entityState.HasAttribute("Player"));
     }
 }
