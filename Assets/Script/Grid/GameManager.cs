@@ -14,9 +14,6 @@ namespace CakeEngineering
         private TagsScreen _tagsScreen;
 
         [SerializeField]
-        private Entity _selectedEntity;
-
-        [SerializeField]
         private GameObject _selectBox;
 
         private History<GridState> _gridHistory;
@@ -138,7 +135,8 @@ namespace CakeEngineering
                 if (_isInSelectState && _selectDirection != Vector2.zero)
                 {
                     var playerPosition = CurrentGridState.PlayerState.Position;
-                    _selectedEntity = CurrentGridState[playerPosition + _selectDirection].Entity;
+                    _tagsScreen.firstEntity = CurrentGridState.PlayerState.Entity;
+                    _tagsScreen.secondEntity = CurrentGridState[playerPosition + _selectDirection].Entity;
                     _gridHistory.CreateNext((GridState) _gridHistory.Current.Clone());
                     DisablePlayerControler();
                     _tagsScreen.gameObject.SetActive(true);
@@ -171,7 +169,5 @@ namespace CakeEngineering
         }
 
         public GridState CurrentGridState => _gridHistory.Current;
-
-        public Entity SelectedEntity => _selectedEntity;
     }
 }

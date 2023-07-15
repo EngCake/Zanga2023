@@ -15,17 +15,20 @@ namespace CakeEngineering
 
     public class TagsScreen : MonoBehaviour
     {
-        private static readonly int PLAYER_COLUMN = 0;
+        private static readonly int FIRST_COLUMN = 0;
 
-        private static readonly int OBJECT_COLUMN = 1;
+        private static readonly int SECOND_COLUMN = 1;
 
-        public GameManager GameManager;
+        [SerializeField]
+        private GameManager _gameManager;
 
-        public TMP_Text PlayerListText;
+        public Entity firstEntity;
 
-        public TMP_Text ObjectListText;
+        public Entity secondEntity;
 
-        public TMP_Text DescriptionText;
+        public TMP_Text firstListText;
+
+        public TMP_Text secondListText;
 
         private Cursor _cursor;
 
@@ -53,7 +56,7 @@ namespace CakeEngineering
 
         private void OnEnable()
         {
-            _cursor = FindValidCursorPosition(PLAYER_COLUMN) ?? FindValidCursorPosition(OBJECT_COLUMN);
+            _cursor = FindValidCursorPosition(FIRST_COLUMN) ?? FindValidCursorPosition(SECOND_COLUMN);
             _navigate.Enable();
             _select.Enable();
             _cancel.Enable();
@@ -69,19 +72,10 @@ namespace CakeEngineering
 
         private void Redraw()
         {
-            var player = GameManager.CurrentGridState.PlayerState;
-            var selected = GameManager.CurrentGridState.FindState(GameManager.SelectedEntity);
-            PlayerListText.text = DrawEntityList(player, PLAYER_COLUMN);
-            ObjectListText.text = DrawEntityList(selected, OBJECT_COLUMN);
-            if (_cursor != null)
-            {
-                var attributesList = _cursor.Column == PLAYER_COLUMN ? player.Attributes : selected.Attributes;
-                DescriptionText.text = attributesList[_cursor.Row].Description;
-            }
-            else
-            {
-                DescriptionText.text = "";
-            }
+            var firstEntityState = _gameManager.CurrentGridState.FindState(firstEntity);
+            var secondEntityState = _gameManager.CurrentGridState.FindState(secondEntity);
+            firstListText.text = DrawEntityList(firstEntityState, FIRST_COLUMN);
+            secondListText.text = DrawEntityList(secondEntityState, SECOND_COLUMN);
         }
 
         private string DrawEntityList(EntityState entityState, int column)
@@ -145,9 +139,9 @@ namespace CakeEngineering
                         Lock();
                     }
                 }
-                else if (navigateDirection == Vector2.left && _cursor.Column == OBJECT_COLUMN)
+                else if (navigateDirection == Vector2.left && _cursor.Column == SECOND_COLUMN)
                 {
-                    var newCursor = FindValidCursorPosition(PLAYER_COLUMN, _cursor.Row, 1) ?? FindValidCursorPosition(PLAYER_COLUMN, _cursor.Row, -1);
+                    var newCursor = FindValidCursorPosition(FIRST_COLUMN, _cursor.Row, 1) ?? FindValidCursorPosition(FIRST_COLUMN, _cursor.Row, -1);
                     if (newCursor != null)
                     {
                         _cursor = newCursor;
@@ -155,9 +149,9 @@ namespace CakeEngineering
                         Lock();
                     }
                 }
-                else if (navigateDirection == Vector2.right && _cursor.Column == PLAYER_COLUMN)
+                else if (navigateDirection == Vector2.right && _cursor.Column == FIRST_COLUMN)
                 {
-                    var newCursor = FindValidCursorPosition(OBJECT_COLUMN, _cursor.Row, 1) ?? FindValidCursorPosition(OBJECT_COLUMN, _cursor.Row, -1);
+                    var newCursor = FindValidCursorPosition(SECOND_COLUMN, _cursor.Row, 1) ?? FindValidCursorPosition(SECOND_COLUMN, _cursor.Row, -1);
                     if (newCursor != null)
                     {
                         _cursor = newCursor;
@@ -168,42 +162,40 @@ namespace CakeEngineering
             }
             else if (!_lock && _select.IsPressed() && _cursor != null)
             {
-                var player = GameManager.CurrentGridState.PlayerState;
-                var selectedObject = GameManager.CurrentGridState.FindState(GameManager.SelectedEntity);
-                var attributesList = _cursor.Column == PLAYER_COLUMN ? player.Attributes : selectedObject.Attributes;
-
+                var firstEntityState = _gameManager.CurrentGridState.FindState(firstEntity);
+                var secondEntityState = _gameManager.CurrentGridState.FindState(secondEntity);
+                var attributesList = _cursor.Column == FIRST_COLUMN ? firstEntityState.Attributes : secondEntityState.Attributes;
                 var selectedAttribute = attributesList[_cursor.Row];
-
-                if (_cursor.Column == PLAYER_COLUMN)
+                if (_cursor.Column == FIRST_COLUMN)
                 {
-                    var modifiedPlayer = player.WithoutAttribute(selectedAttribute);
-                    var modifiedObject = selectedObject.WithAttribute(selectedAttribute);
-                    if (modifiedObject != null && modifiedPlayer != null)
+                    var modifiedFirstEntity = firstEntityState.WithoutAttribute(selectedAttribute);
+                    var modifiedSecondEntity = secondEntityState.WithAttribute(selectedAttribute);
+                    if (modifiedSecondEntity != null && modifiedFirstEntity != null)
                     {
-                        GameManager.CurrentGridState[selectedObject.Position] = modifiedObject;
-                        GameManager.CurrentGridState[player.Position] = modifiedPlayer;
+                        _gameManager.CurrentGridState[secondEntityState.Position] = modifiedSecondEntity;
+                        _gameManager.CurrentGridState[firstEntityState.Position] = modifiedFirstEntity;
                         _dirty = true;
-                        _cursor =   FindValidCursorPosition(PLAYER_COLUMN, _cursor.Column, 1) ??
-                                    FindValidCursorPosition(PLAYER_COLUMN, _cursor.Column, -1) ??
-                                    FindValidCursorPosition(OBJECT_COLUMN, _cursor.Column, 1) ??
-                                    FindValidCursorPosition(OBJECT_COLUMN, _cursor.Column, -1);
+                        _cursor =   FindValidCursorPosition(FIRST_COLUMN, _cursor.Column, 1) ??
+                                    FindValidCursorPosition(FIRST_COLUMN, _cursor.Column, -1) ??
+                                    FindValidCursorPosition(SECOND_COLUMN, _cursor.Column, 1) ??
+                                    FindValidCursorPosition(SECOND_COLUMN, _cursor.Column, -1);
                         Redraw();
                         Lock();
                     }
                 }
                 else
                 {
-                    var modifiedPlayer = player.WithAttribute(selectedAttribute);
-                    var modifiedObject = selectedObject.WithoutAttribute(selectedAttribute);
-                    if (modifiedObject != null && modifiedPlayer != null)
+                    var modifiedFirstState = firstEntityState.WithAttribute(selectedAttribute);
+                    var modifiedSecondState = secondEntityState.WithoutAttribute(selectedAttribute);
+                    if (modifiedSecondState != null && modifiedFirstState != null)
                     {
-                        GameManager.CurrentGridState[selectedObject.Position] = modifiedObject;
-                        GameManager.CurrentGridState[player.Position] = modifiedPlayer;
+                        _gameManager.CurrentGridState[secondEntityState.Position] = modifiedSecondState;
+                        _gameManager.CurrentGridState[firstEntityState.Position] = modifiedFirstState;
                         _dirty = true;
-                        _cursor = FindValidCursorPosition(OBJECT_COLUMN, _cursor.Column, 1) ??
-                                    FindValidCursorPosition(OBJECT_COLUMN, _cursor.Column, -1) ??
-                                    FindValidCursorPosition(PLAYER_COLUMN, _cursor.Column, 1) ??
-                                    FindValidCursorPosition(PLAYER_COLUMN, _cursor.Column, -1);
+                        _cursor = FindValidCursorPosition(SECOND_COLUMN, _cursor.Column, 1) ??
+                                    FindValidCursorPosition(SECOND_COLUMN, _cursor.Column, -1) ??
+                                    FindValidCursorPosition(FIRST_COLUMN, _cursor.Column, 1) ??
+                                    FindValidCursorPosition(FIRST_COLUMN, _cursor.Column, -1);
                         Redraw();
                         Lock();
                     }
@@ -212,19 +204,19 @@ namespace CakeEngineering
             else if (!_lock && _cancel.IsPressed())
             {
                 gameObject.SetActive(false);
-                GameManager.EnablePlayerControl();
+                _gameManager.EnablePlayerControl();
                 if (!_dirty)
                 {
-                    GameManager.Undo();
+                    _gameManager.Undo();
                 }
             }
         }
 
         private Cursor FindValidCursorPosition(int column, int fromRow = 0, int direction = 1)
         {
-            var player = GameManager.CurrentGridState.PlayerState;
-            var selected = GameManager.CurrentGridState.FindState(GameManager.SelectedEntity);
-            var attributesList = column == 0 ? player.Attributes : selected.Attributes;
+            var firstEntityState = _gameManager.CurrentGridState.FindState(firstEntity);
+            var secondEntityState = _gameManager.CurrentGridState.FindState(secondEntity);
+            var attributesList = column == FIRST_COLUMN ? firstEntityState.Attributes : secondEntityState.Attributes;
             for (var i = Mathf.Clamp(fromRow, 0, attributesList.Count - 1); i < attributesList.Count && i >= 0; i += direction)
                 if (attributesList[i].Active && !attributesList[i].Locked)
                     return new Cursor { Column = column, Row = i };
