@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -7,7 +6,7 @@ using UnityEngine;
 namespace CakeEngineering
 {
     [Serializable]
-    public class GridState : ICloneable, IEnumerable<EntityState>
+    public class GridState : ICloneable
     {
         private readonly Dictionary<Vector2, EntityState> _grid;
 
@@ -55,20 +54,9 @@ namespace CakeEngineering
             return clone;
         }
 
-        public IEnumerator<EntityState> GetEnumerator()
-        {
-            foreach (var (_, entityState) in _grid)
-                yield return entityState;
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
-
         public IEnumerable<EntityState> FindByAttribute(string attribute)
         {
-            return this.Where(entityState => entityState.HasAttribute(attribute));
+            return _grid.Values.Where(entityState => entityState.HasAttribute(attribute));
         }
 
         public List<EntityState> GetAdjacent4(Vector2 position)
@@ -86,9 +74,9 @@ namespace CakeEngineering
 
         public EntityState FindState(Entity entity)
         {
-            return this.FirstOrDefault(entityState => entityState.Entity == entity);
+            return _grid.Values.FirstOrDefault(entityState => entityState.Entity == entity);
         }
 
-        public EntityState PlayerState => this.First(entityState => entityState.HasAttribute("Player"));
+        public EntityState PlayerState => _grid.Values.First(entityState => entityState.HasAttribute("Player"));
     }
 }
