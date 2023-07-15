@@ -8,12 +8,6 @@ namespace CakeEngineering
     public class GameManager : MonoBehaviour
     {
         [SerializeField]
-        private List<GridState> _gridTimeline;
-
-        [SerializeField]
-        private int _timeIndex = 0;
-
-        [SerializeField]
         private List<EntityAttributeSystem> _systems;
 
         [SerializeField]
@@ -24,6 +18,8 @@ namespace CakeEngineering
 
         [SerializeField]
         private GameObject _selectBox;
+
+        private History<GridState> _gridHistory;
 
         private PlayerInput _playerInput;
 
@@ -50,6 +46,7 @@ namespace CakeEngineering
             _select = _playerInput.Player.Select;
             _isInSelectState = false;
             _selectDirection = Vector2.zero;
+            _gridHistory = new History<GridState>();
         }
 
         private void Start()
@@ -57,7 +54,7 @@ namespace CakeEngineering
             var entities = GetComponentsInChildren<Entity>();
             _entities = entities.ToList();
             var initialState = new GridState(entities);
-            _gridTimeline.Add(initialState);
+            _gridHistory.CreateNext(initialState);
             _selectBox.SetActive(false);
             UpdateAllEntities();
         }
@@ -104,9 +101,9 @@ namespace CakeEngineering
             {
                 if (!_isInSelectState)
                 {
-                    CreateNextState();
+                    _gridHistory.CreateNext((GridState) _gridHistory.Current.Clone());
                     RunAllSystems(playerMovement);
-                    Step();
+                    UpdateAllEntities();
                     Lock();
                 }
                 else
@@ -124,10 +121,10 @@ namespace CakeEngineering
             }
             else if (!_lock && _undo.IsPressed())
             {
-                if (!_isInSelectState && _gridTimeline.Count > 1)
+                if (!_isInSelectState && _gridHistory.TryUndo())
                 {
-                    Undo();
                     Lock();
+                    UpdateAllEntities();
                 }
                 else
                 {
@@ -142,7 +139,7 @@ namespace CakeEngineering
                 {
                     var playerPosition = CurrentGridState.PlayerState.Position;
                     _selectedEntity = CurrentGridState[playerPosition + _selectDirection].Entity;
-                    CreateNextState();
+                    _gridHistory.CreateNext((GridState) _gridHistory.Current.Clone());
                     DisablePlayerControler();
                     _tagsScreen.gameObject.SetActive(true);
                     _selectBox.SetActive(false);
@@ -157,19 +154,9 @@ namespace CakeEngineering
             }
         }
 
-        public void Step()
-        {
-            _timeIndex++;
-            UpdateAllEntities();
-        }
-
         public void Undo()
         {
-            if (_timeIndex > 0)
-            {
-                _timeIndex--;
-                UpdateAllEntities();
-            }
+            _gridHistory.TryUndo();
         }
 
         private void RunAllSystems(Vector2 playerMovement)
@@ -178,22 +165,12 @@ namespace CakeEngineering
                 system.Process(playerMovement);
         }
 
-        private void CreateNextState()
-        {
-            if (_timeIndex + 1 < _gridTimeline.Count)
-                _gridTimeline[_timeIndex + 1] = (GridState)_gridTimeline[_timeIndex].Clone();
-            else
-                _gridTimeline.Add((GridState)_gridTimeline[_timeIndex].Clone());
-        }
-
         private void UpdateAllEntities()
         {
             _entities.ForEach(entity => entity.UpdateCurrentState());
         }
 
-        public GridState CurrentGridState => _gridTimeline[_timeIndex];
-
-        public GridState NextGridState => _gridTimeline[_timeIndex + 1];
+        public GridState CurrentGridState => _gridHistory.Current;
 
         public Entity SelectedEntity => _selectedEntity;
     }

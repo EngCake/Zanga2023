@@ -69,8 +69,8 @@ namespace CakeEngineering
 
         private void Redraw()
         {
-            var player = GameManager.NextGridState.PlayerState;
-            var selected = GameManager.NextGridState.FindState(GameManager.SelectedEntity);
+            var player = GameManager.CurrentGridState.PlayerState;
+            var selected = GameManager.CurrentGridState.FindState(GameManager.SelectedEntity);
             PlayerListText.text = DrawEntityList(player, PLAYER_COLUMN);
             ObjectListText.text = DrawEntityList(selected, OBJECT_COLUMN);
             if (_cursor != null)
@@ -168,8 +168,8 @@ namespace CakeEngineering
             }
             else if (!_lock && _select.IsPressed() && _cursor != null)
             {
-                var player = GameManager.NextGridState.PlayerState;
-                var selectedObject = GameManager.NextGridState.FindState(GameManager.SelectedEntity);
+                var player = GameManager.CurrentGridState.PlayerState;
+                var selectedObject = GameManager.CurrentGridState.FindState(GameManager.SelectedEntity);
                 var attributesList = _cursor.Column == PLAYER_COLUMN ? player.Attributes : selectedObject.Attributes;
 
                 var selectedAttribute = attributesList[_cursor.Row];
@@ -180,8 +180,8 @@ namespace CakeEngineering
                     var modifiedObject = selectedObject.WithAttribute(selectedAttribute);
                     if (modifiedObject != null && modifiedPlayer != null)
                     {
-                        GameManager.NextGridState[selectedObject.Position] = modifiedObject;
-                        GameManager.NextGridState[player.Position] = modifiedPlayer;
+                        GameManager.CurrentGridState[selectedObject.Position] = modifiedObject;
+                        GameManager.CurrentGridState[player.Position] = modifiedPlayer;
                         _dirty = true;
                         _cursor =   FindValidCursorPosition(PLAYER_COLUMN, _cursor.Column, 1) ??
                                     FindValidCursorPosition(PLAYER_COLUMN, _cursor.Column, -1) ??
@@ -197,8 +197,8 @@ namespace CakeEngineering
                     var modifiedObject = selectedObject.WithoutAttribute(selectedAttribute);
                     if (modifiedObject != null && modifiedPlayer != null)
                     {
-                        GameManager.NextGridState[selectedObject.Position] = modifiedObject;
-                        GameManager.NextGridState[player.Position] = modifiedPlayer;
+                        GameManager.CurrentGridState[selectedObject.Position] = modifiedObject;
+                        GameManager.CurrentGridState[player.Position] = modifiedPlayer;
                         _dirty = true;
                         _cursor = FindValidCursorPosition(OBJECT_COLUMN, _cursor.Column, 1) ??
                                     FindValidCursorPosition(OBJECT_COLUMN, _cursor.Column, -1) ??
@@ -213,17 +213,17 @@ namespace CakeEngineering
             {
                 gameObject.SetActive(false);
                 GameManager.EnablePlayerControl();
-                if (_dirty)
+                if (!_dirty)
                 {
-                    GameManager.Step();
+                    GameManager.Undo();
                 }
             }
         }
 
         private Cursor FindValidCursorPosition(int column, int fromRow = 0, int direction = 1)
         {
-            var player = GameManager.NextGridState.PlayerState;
-            var selected = GameManager.NextGridState.FindState(GameManager.SelectedEntity);
+            var player = GameManager.CurrentGridState.PlayerState;
+            var selected = GameManager.CurrentGridState.FindState(GameManager.SelectedEntity);
             var attributesList = column == 0 ? player.Attributes : selected.Attributes;
             for (var i = Mathf.Clamp(fromRow, 0, attributesList.Count - 1); i < attributesList.Count && i >= 0; i += direction)
                 if (attributesList[i].Active && !attributesList[i].Locked)

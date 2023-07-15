@@ -10,8 +10,8 @@ namespace CakeEngineering
 
         public override void Process(Vector2 playerMovement)
         {
-            _currentState = (GridState)_gameManager.NextGridState.Clone();
-            _nextState = _gameManager.NextGridState;
+            _currentState = (GridState)_gameManager.CurrentGridState.Clone();
+            _nextState = _gameManager.CurrentGridState;
             var playerPosition = _currentState.PlayerState.Position;
             if (CanMoveEntity(playerPosition, playerMovement))
                 MoveEntity(playerPosition, playerMovement);
