@@ -25,6 +25,8 @@ namespace CakeEngineering
 
         private bool _lock;
 
+        private GridState _previousState;
+
         private void Start()
         {
             _lock = false;
@@ -38,6 +40,10 @@ namespace CakeEngineering
             _gridTimeline = new List<GridState>();
             var initialState = new GridState(GetComponentsInChildren<Entity>());
             _gridTimeline.Add(initialState);
+
+            _previousState = null;
+
+            UpdateAllEntities();
         }
 
         private void Lock()
@@ -56,37 +62,59 @@ namespace CakeEngineering
             var moveDirection = _move.ReadValue<Vector2>();
             if (!_lock && moveDirection != Vector2.zero && (moveDirection.x == 0 || moveDirection.y == 0))
             {
-                _gridTimeline.Add((GridState) _gridTimeline.Last().Clone());
+                CreateNextState();
                 MovePlayer(moveDirection);
-                foreach (var system in _systems)
-                    system.Process();
+                SystemsProcess();
+                _previousState = CurrentGridState;
+                _timeIndex++;
                 UpdateAllEntities();
                 Lock();
-                _timeIndex++;
-            } else if (!_lock && _undo.IsPressed() && _gridTimeline.Count > 1)
-            {
-                _gridTimeline.RemoveAt(_gridTimeline.Count - 1);
-                _gridTimeline.Last().UpdateAllEntities();
-                Lock();
-                _timeIndex--;
             }
+            else if (!_lock && _undo.IsPressed() && _gridTimeline.Count > 1)
+            {
+                if (_timeIndex > 0)
+                {
+                    _previousState = CurrentGridState;
+                    _timeIndex--;
+                    UpdateAllEntities();
+                    Lock();
+                }
+            }
+        }
+
+        private void SystemsProcess()
+        {
+            foreach (var system in _systems)
+                system.Process();
+        }
+
+        private void CreateNextState()
+        {
+            if (_timeIndex + 1 < _gridTimeline.Count)
+                _gridTimeline[_timeIndex + 1] = (GridState)_gridTimeline[_timeIndex].Clone();
+            else
+                _gridTimeline.Add((GridState)_gridTimeline[_timeIndex].Clone());
         }
 
         private void UpdateAllEntities()
         {
-            NextGridState.UpdateAllEntities();
+            CurrentGridState.UpdateAllEntities();
             foreach (var entity in CurrentGridState)
             {
-                if (!NextGridState.Any(entityState => entityState.Entity == entity.Entity))
-                {
-                    entity.Entity.Hide();
-                }
-            }
-            foreach (var entity in NextGridState)
-            {
-                if (!CurrentGridState.Any(entityState => entityState.Entity == entity.Entity))
+                if (_previousState != null && !_previousState.Any(entityState => entityState.Entity == entity.Entity))
                 {
                     entity.Entity.Show();
+                }
+                entity.Entity.SetBurning(entity.HasAttribute("Burning"));
+            }
+            if (_previousState != null)
+            {
+                foreach (var entity in _previousState)
+                {
+                    if (!CurrentGridState.Any(entityState => entityState.Entity == entity.Entity))
+                    {
+                        entity.Entity.Hide();
+                    }
                 }
             }
         }
@@ -99,7 +127,6 @@ namespace CakeEngineering
                 {
                     if (CanMoveEntity(entityState.Position, playerMovement))
                         MoveEntity(entityState.Position, playerMovement);
-                    return;
                 }
             }
         }
@@ -120,14 +147,14 @@ namespace CakeEngineering
         {
             var previousEntity = (EntityState) null;
             var currentPosition = entityPosition;
-            while (_gridTimeline[_timeIndex].HasEntityAt(currentPosition))
+            while (CurrentGridState.HasEntityAt(currentPosition))
             {
-                var temp = _gridTimeline[_timeIndex + 1][currentPosition];
-                _gridTimeline[_timeIndex + 1][currentPosition] = previousEntity;
+                var temp = NextGridState[currentPosition];
+                NextGridState[currentPosition] = previousEntity;
                 previousEntity = temp.WithNewPosition(currentPosition + movement);
                 currentPosition += movement;
             }
-            _gridTimeline[_timeIndex + 1][currentPosition] = previousEntity;
+            NextGridState[currentPosition] = previousEntity;
         }
 
         public GridState CurrentGridState => _gridTimeline[_timeIndex];

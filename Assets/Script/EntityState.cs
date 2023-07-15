@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace CakeEngineering
 {
@@ -30,14 +31,6 @@ namespace CakeEngineering
         public Vector2 Position => _position;
 
         public Entity Entity => _entity;
-
-        private EntityState(Entity entity, bool isActive = true)
-        {
-            _isActive = isActive;
-            _attributes = new List<EntityAttribute>();
-            _entity = entity;
-            _position = entity.Position;
-        }
 
         private EntityState(bool isActive, EntityType type, string name, List<EntityAttribute> attributes, Entity entity, Vector2 position)
         {
@@ -74,7 +67,8 @@ namespace CakeEngineering
 
         public object Clone()
         {
-            var clone = new EntityState(_entity, _isActive);
+            var attributes = new List<EntityAttribute>();
+            var clone = new EntityState(_isActive, _type, _name, attributes, _entity, _position);
             _attributes.ForEach(attribute => clone._attributes.Add(attribute));
             return clone;
         }

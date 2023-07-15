@@ -15,11 +15,18 @@ namespace CakeEngineering
 
         private SpriteRenderer _spriteRenderer;
 
+        [SerializeField]
+        private Sprite _normalSprite;
+
+        [SerializeField]
+        private Sprite _burningSprite;
+
         private void Awake()
         {
             _transform = GetComponent<Transform>();
             _initialState = new EntityState(this, _initialAttributes);
             _spriteRenderer = GetComponent<SpriteRenderer>();
+            _spriteRenderer.sprite = _normalSprite;
         }
 
         public void Hide()
@@ -35,6 +42,11 @@ namespace CakeEngineering
         public void SetPosition(Vector2 position)
         {
             LeanTween.moveLocal(gameObject, position, 0.2f).setEase(LeanTweenType.easeInCubic);
+        }
+
+        public void SetBurning(bool isBurning)
+        {
+            _spriteRenderer.sprite = isBurning ? _burningSprite : _normalSprite;
         }
 
         public Vector2 Position => _transform.position;
