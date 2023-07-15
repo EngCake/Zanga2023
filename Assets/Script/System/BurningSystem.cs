@@ -7,7 +7,7 @@ namespace CakeEngineering
         [SerializeField]
         private EntityAttribute _burningAttribute;
 
-        public override void Process()
+        public override void Process(Vector2 playerMovement)
         {
             var currentState = (GridState) _gameManager.NextGridState.Clone();
             var nextState = _gameManager.NextGridState;
