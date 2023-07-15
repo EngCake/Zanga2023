@@ -19,6 +19,12 @@ namespace CakeEngineering
         [SerializeField]
         private TagsScreen _tagsScreen;
 
+        [SerializeField]
+        private Entity _selectedEntity;
+
+        [SerializeField]
+        private GameObject _selectBox;
+
         private PlayerInput _playerInput;
 
         private InputAction _move;
@@ -31,10 +37,11 @@ namespace CakeEngineering
 
         private GridState _previousState;
 
-        [SerializeField]
-        private Entity _selectedEntity;
-
         private List<Entity> _entities;
+
+        private bool _isInSelectState;
+
+        private Vector2 _selectDirection;
 
         private void Awake()
         {
@@ -42,11 +49,10 @@ namespace CakeEngineering
             _playerInput = new PlayerInput();
             _move = _playerInput.Player.Move;
             _undo = _playerInput.Player.Undo;
-            _viewAttributes = _playerInput.Player.ViewAttributes;
-            _gridTimeline = new List<GridState>();
-
+            _viewAttributes = _playerInput.Player.Select;
             _previousState = null;
-            _selectedEntity = null;
+            _isInSelectState = false;
+            _selectDirection = Vector2.zero;
         }
 
         private void Start()
@@ -55,6 +61,7 @@ namespace CakeEngineering
             _entities = entities.ToList();
             var initialState = new GridState(entities);
             _gridTimeline.Add(initialState);
+            _selectBox.SetActive(false);
             UpdateAllEntities();
         }
 
@@ -98,23 +105,76 @@ namespace CakeEngineering
             var moveDirection = _move.ReadValue<Vector2>();
             if (!_lock && moveDirection != Vector2.zero && (moveDirection.x == 0 || moveDirection.y == 0))
             {
-                CreateNextState();
-                MovePlayer(moveDirection);
-                SystemsProcess();
-                _previousState = CurrentGridState;
-                _timeIndex++;
-                UpdateAllEntities();
-                Lock();
-            }
-            else if (!_lock && _undo.IsPressed() && _gridTimeline.Count > 1)
-            {
-                if (_timeIndex > 0)
+                if (!_isInSelectState)
                 {
+                    CreateNextState();
+                    MovePlayer(moveDirection);
+                    SystemsProcess();
                     _previousState = CurrentGridState;
-                    _timeIndex--;
-                    UpdateAllEntities();
+                    Step();
                     Lock();
                 }
+                else
+                {
+                    var playerPosition = CurrentGridState.PlayerState.Position;
+                    if (CurrentGridState.HasEntityAt(playerPosition + moveDirection))
+                    {
+                        if (!_selectBox.activeSelf)
+                            _selectBox.SetActive(true);
+                        _selectDirection = moveDirection;
+                        _selectBox.transform.position = playerPosition + _selectDirection;
+                        Lock();
+                    }
+                }
+            }
+            else if (!_lock && _undo.IsPressed())
+            {
+                if (!_isInSelectState && _gridTimeline.Count > 1)
+                {
+                    Undo();
+                    Lock();
+                }
+                else
+                {
+                    _isInSelectState = false;
+                    _selectBox.SetActive(false);
+                    Lock();
+                }
+            }
+            else if (!_lock && _viewAttributes.IsPressed())
+            {
+                if (_isInSelectState && _selectDirection != Vector2.zero)
+                {
+                    var playerPosition = CurrentGridState.PlayerState.Position;
+                    _selectedEntity = CurrentGridState[playerPosition + _selectDirection].Entity;
+                    CreateNextState();
+                    DisablePlayerControler();
+                    _tagsScreen.gameObject.SetActive(true);
+                    _selectBox.SetActive(false);
+                    _isInSelectState = false;
+                }
+                else
+                {
+                    _selectDirection = Vector2.zero;
+                    _isInSelectState = true;
+                    Lock();
+                }
+            }
+        }
+
+        public void Step()
+        {
+            _timeIndex++;
+            UpdateAllEntities();
+        }
+
+        public void Undo()
+        {
+            if (_timeIndex > 0)
+            {
+                _previousState = CurrentGridState;
+                _timeIndex--;
+                UpdateAllEntities();
             }
         }
 
@@ -175,17 +235,10 @@ namespace CakeEngineering
             NextGridState[currentPosition] = previousEntity;
         }
 
-        public EntityState FindState(Entity entity)
-        {
-            return CurrentGridState.FirstOrDefault(entityState => entityState.Entity == entity);
-        }
-
-        public EntityState PlayerState => CurrentGridState.First(entityState => entityState.HasAttribute("Player"));
-
-        public EntityState SelectedEntityState => _selectedEntity.InitialState;
-
         public GridState CurrentGridState => _gridTimeline[_timeIndex];
 
         public GridState NextGridState => _gridTimeline[_timeIndex + 1];
+
+        public Entity SelectedEntity => _selectedEntity;
     }
 }

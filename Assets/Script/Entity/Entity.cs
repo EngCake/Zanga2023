@@ -5,6 +5,14 @@ namespace CakeEngineering
 {
     public class Entity : MonoBehaviour
     {
+        [Header("Details")]
+        [SerializeField]
+        private string _entityName;
+
+        [SerializeField]
+        private EntityType _entityType;
+
+        [Header("Sprites")]
         [SerializeField]
         private Sprite _normalSprite;
 
@@ -27,7 +35,7 @@ namespace CakeEngineering
         private void Awake()
         {
             _transform = GetComponent<Transform>();
-            _initialState = new EntityState(this, _initialAttributes);
+            _initialState = new EntityState(true, _entityType, _entityName, _initialAttributes, this, Position);
             _currentState = _initialState;
             _spriteRenderer = GetComponent<SpriteRenderer>();
             _spriteRenderer.sprite = _normalSprite;
@@ -36,7 +44,7 @@ namespace CakeEngineering
 
         public void UpdateCurrentState()
         {
-            var state = _gameManager.FindState(this);
+            var state = _gameManager.CurrentGridState.FindState(this);
             if (state == null && _currentState != null)
             {
                 LeanTween.color(gameObject, Color.clear, 0.2f);

@@ -14,4 +14,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Name: Burning
   Description: Burns when adjacent to <Flaming> entities.
-  Locked: 0
+  Locked: 1
+  Active: 1

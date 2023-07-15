@@ -15,6 +15,10 @@ namespace CakeEngineering
 
     public class TagsScreen : MonoBehaviour
     {
+        private static readonly int PLAYER_COLUMN = 0;
+
+        private static readonly int OBJECT_COLUMN = 1;
+
         public GameManager GameManager;
 
         public TMP_Text PlayerListText;
@@ -29,44 +33,54 @@ namespace CakeEngineering
 
         private InputAction _navigate;
 
-        private InputAction _submit;
+        private InputAction _select;
 
         private InputAction _cancel;
+
+        private bool _dirty;
+
+        private bool _lock;
 
         private void Awake()
         {
             _playerInput = new PlayerInput();
             _navigate = _playerInput.UI.Navigate;
-            _submit = _playerInput.UI.Submit;
+            _select = _playerInput.UI.Select;
             _cancel = _playerInput.UI.Cancel;
+            _dirty = false;
+            _lock = false;
         }
 
         private void OnEnable()
         {
-            _cursor = FindValidCursorPosition(0) ?? FindValidCursorPosition(1);
-            ReDraw();
+            _cursor = FindValidCursorPosition(PLAYER_COLUMN) ?? FindValidCursorPosition(OBJECT_COLUMN);
             _navigate.Enable();
-            _submit.Enable();
+            _select.Enable();
             _cancel.Enable();
+            Redraw();
         }
 
         private void OnDisable()
         {
             _navigate.Disable();
-            _submit.Disable();
+            _select.Disable();
             _cancel.Disable();
         }
 
-        private void ReDraw()
+        private void Redraw()
         {
-            var player = GameManager.PlayerState;
-            var selected = GameManager.SelectedEntityState;
-            PlayerListText.text = DrawEntityList(player, 0);
-            ObjectListText.text = DrawEntityList(selected, 1);
+            var player = GameManager.NextGridState.PlayerState;
+            var selected = GameManager.NextGridState.FindState(GameManager.SelectedEntity);
+            PlayerListText.text = DrawEntityList(player, PLAYER_COLUMN);
+            ObjectListText.text = DrawEntityList(selected, OBJECT_COLUMN);
             if (_cursor != null)
             {
-                var attributesList = _cursor.Column == 0 ? player.Attributes : selected.Attributes;
+                var attributesList = _cursor.Column == PLAYER_COLUMN ? player.Attributes : selected.Attributes;
                 DescriptionText.text = attributesList[_cursor.Row].Description;
+            }
+            else
+            {
+                DescriptionText.text = "";
             }
         }
 
@@ -84,21 +98,32 @@ namespace CakeEngineering
                     tags.Add("color=grey");
                     tags.Add("i");
                 }
-                if (attribute.Locked)
+                if (!attribute.Active)
                     tags.Add("s");
-                if (column == _cursor.Column && i == _cursor.Row)
+                if (_cursor != null && column == _cursor.Column && i == _cursor.Row)
                     tags.Add("color=yellow");
-                var openingTag = $"<{string.Join("><", tags)}>";
-                var closingTag = $"</{string.Join("></", tags)}>";
-                listText.Append($"- {openingTag}{attribute.Name}{closingTag}");
+                var openingTag = tags.Count > 0 ? $"<{string.Join("><", tags)}>" : "";
+                var closingTag = tags.Count > 0 ? $"</{string.Join("></", tags)}>" : "";
+                listText.Append($"- {openingTag}{attribute.Name}{closingTag}\n");
             }
             return listText.ToString();
+        }
+
+        private void Lock()
+        {
+            _lock = true;
+            Invoke(nameof(Unlock), 0.2f);
+        }
+
+        private void Unlock()
+        {
+            _lock = false;
         }
 
         private void Update()
         {
             var navigateDirection = _navigate.ReadValue<Vector2>();
-            if (_cursor != null && navigateDirection != Vector2.zero)
+            if (!_lock && _cursor != null && navigateDirection != Vector2.zero)
             {
                 if (navigateDirection == Vector2.up)
                 {
@@ -106,7 +131,8 @@ namespace CakeEngineering
                     if (newCursor != null)
                     {
                         _cursor = newCursor;
-                        ReDraw();
+                        Redraw();
+                        Lock();
                     }
                 }
                 else if (navigateDirection == Vector2.down)
@@ -115,36 +141,91 @@ namespace CakeEngineering
                     if (newCursor != null)
                     {
                         _cursor = newCursor;
-                        ReDraw();
+                        Redraw();
+                        Lock();
                     }
                 }
-                else if (navigateDirection == Vector2.left && _cursor.Column == 1)
+                else if (navigateDirection == Vector2.left && _cursor.Column == OBJECT_COLUMN)
                 {
-                    var newCursor = FindValidCursorPosition(0, _cursor.Row, 1) ?? FindValidCursorPosition(0, _cursor.Row, -1);
+                    var newCursor = FindValidCursorPosition(PLAYER_COLUMN, _cursor.Row, 1) ?? FindValidCursorPosition(PLAYER_COLUMN, _cursor.Row, -1);
                     if (newCursor != null)
                     {
                         _cursor = newCursor;
-                        ReDraw();
+                        Redraw();
+                        Lock();
                     }
                 }
-                else if (navigateDirection == Vector2.right && _cursor.Column == 0)
+                else if (navigateDirection == Vector2.right && _cursor.Column == PLAYER_COLUMN)
                 {
-                    var newCursor = FindValidCursorPosition(1, _cursor.Row, 1) ?? FindValidCursorPosition(1, _cursor.Row, -1);
+                    var newCursor = FindValidCursorPosition(OBJECT_COLUMN, _cursor.Row, 1) ?? FindValidCursorPosition(OBJECT_COLUMN, _cursor.Row, -1);
                     if (newCursor != null)
                     {
                         _cursor = newCursor;
-                        ReDraw();
+                        Redraw();
+                        Lock();
                     }
+                }
+            }
+            else if (!_lock && _select.IsPressed() && _cursor != null)
+            {
+                var player = GameManager.NextGridState.PlayerState;
+                var selectedObject = GameManager.NextGridState.FindState(GameManager.SelectedEntity);
+                var attributesList = _cursor.Column == PLAYER_COLUMN ? player.Attributes : selectedObject.Attributes;
+
+                var selectedAttribute = attributesList[_cursor.Row];
+
+                if (_cursor.Column == PLAYER_COLUMN)
+                {
+                    var modifiedPlayer = player.WithoutAttribute(selectedAttribute);
+                    var modifiedObject = selectedObject.WithAttribute(selectedAttribute);
+                    if (modifiedObject != null && modifiedPlayer != null)
+                    {
+                        GameManager.NextGridState[selectedObject.Position] = modifiedObject;
+                        GameManager.NextGridState[player.Position] = modifiedPlayer;
+                        _dirty = true;
+                        _cursor =   FindValidCursorPosition(PLAYER_COLUMN, _cursor.Column, 1) ??
+                                    FindValidCursorPosition(PLAYER_COLUMN, _cursor.Column, -1) ??
+                                    FindValidCursorPosition(OBJECT_COLUMN, _cursor.Column, 1) ??
+                                    FindValidCursorPosition(OBJECT_COLUMN, _cursor.Column, -1);
+                        Redraw();
+                        Lock();
+                    }
+                }
+                else
+                {
+                    var modifiedPlayer = player.WithAttribute(selectedAttribute);
+                    var modifiedObject = selectedObject.WithoutAttribute(selectedAttribute);
+                    if (modifiedObject != null && modifiedPlayer != null)
+                    {
+                        GameManager.NextGridState[selectedObject.Position] = modifiedObject;
+                        GameManager.NextGridState[player.Position] = modifiedPlayer;
+                        _dirty = true;
+                        _cursor = FindValidCursorPosition(OBJECT_COLUMN, _cursor.Column, 1) ??
+                                    FindValidCursorPosition(OBJECT_COLUMN, _cursor.Column, -1) ??
+                                    FindValidCursorPosition(PLAYER_COLUMN, _cursor.Column, 1) ??
+                                    FindValidCursorPosition(PLAYER_COLUMN, _cursor.Column, -1);
+                        Redraw();
+                        Lock();
+                    }
+                }
+            }
+            else if (!_lock && _cancel.IsPressed())
+            {
+                gameObject.SetActive(false);
+                GameManager.EnablePlayerControl();
+                if (_dirty)
+                {
+                    GameManager.Step();
                 }
             }
         }
 
         private Cursor FindValidCursorPosition(int column, int fromRow = 0, int direction = 1)
         {
-            var player = GameManager.PlayerState;
-            var selected = GameManager.SelectedEntityState;
+            var player = GameManager.NextGridState.PlayerState;
+            var selected = GameManager.NextGridState.FindState(GameManager.SelectedEntity);
             var attributesList = column == 0 ? player.Attributes : selected.Attributes;
-            for (var i = fromRow; i < attributesList.Count && i >= 0; i += direction)
+            for (var i = Mathf.Clamp(fromRow, 0, attributesList.Count - 1); i < attributesList.Count && i >= 0; i += direction)
                 if (attributesList[i].Active && !attributesList[i].Locked)
                     return new Cursor { Column = column, Row = i };
             return null;

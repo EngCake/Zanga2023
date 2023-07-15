@@ -33,7 +33,7 @@ namespace CakeEngineering
 
         public List<EntityAttribute> Attributes => _attributes;
 
-        private EntityState(bool isActive, EntityType type, string name, List<EntityAttribute> attributes, Entity entity, Vector2 position)
+        public EntityState(bool isActive, EntityType type, string name, List<EntityAttribute> attributes, Entity entity, Vector2 position)
         {
             _isActive = isActive;
             _type = type;
@@ -41,14 +41,6 @@ namespace CakeEngineering
             _attributes = attributes;
             _entity = entity;
             _position = position;
-        }
-
-        public EntityState(Entity entity, List<EntityAttribute> attributes, bool isActive = true)
-        {
-            _isActive = isActive;
-            _attributes = attributes;
-            _entity = entity;
-            _position = entity.Position;
         }
 
         public bool HasAttribute(string attributeName)
@@ -81,9 +73,20 @@ namespace CakeEngineering
 
         public EntityState WithAttribute(EntityAttribute attribute)
         {
+            if (_attributes.Contains(attribute))
+                return null;
             var attributes = new List<EntityAttribute>();
             _attributes.ForEach(attribute => attributes.Add(attribute));
             attributes.Add(attribute);
+            return new EntityState(_isActive, _type, _name, attributes, _entity, _position);
+        }
+
+        public EntityState WithoutAttribute(EntityAttribute attribute)
+        {
+            var attributes = new List<EntityAttribute>();
+            foreach (var attr in _attributes)
+                if (attr.Name != attribute.Name)
+                    attributes.Add(attr);
             return new EntityState(_isActive, _type, _name, attributes, _entity, _position);
         }
     }

@@ -83,5 +83,12 @@ namespace CakeEngineering
             }
             return result;
         }
+
+        public EntityState FindState(Entity entity)
+        {
+            return this.FirstOrDefault(entityState => entityState.Entity == entity);
+        }
+
+        public EntityState PlayerState => this.First(entityState => entityState.HasAttribute("Player"));
     }
 }

@@ -13,5 +13,12 @@ MonoBehaviour:
   m_Name: Flammable
   m_EditorClassIdentifier: 
   Name: Flammable
-  Description: 
+  Description: '<size=60>FLAMMABLE</size>
+
+
+    <color=yellow>FLAMMABLE</color> things
+    catch fire and become <color=yellow>BURNING</color> when they are <i>adjacent</i>
+    to <color=yellow>BURNING</color> things. If they are <i>not</i> <color=yellow>IMMORTAL</color>,
+    they will disappear in the next step.'
   Locked: 0
+  Active: 1
