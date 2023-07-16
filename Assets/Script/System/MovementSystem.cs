@@ -71,7 +71,7 @@ namespace CakeEngineering
             {
                 return true;
             }
-            else if (!isPushed && CanMoveByItself(currentEntityState) || isPushed && currentEntityState.HasAttribute("Movable"))
+            else if (!isPushed && CanMoveByItself(currentEntityState) || isPushed && currentEntityState.HasAttribute("Pushable"))
             {
                 var nextPosition = entityPosition + movement;
                 if (!_currentState.HasEntityAt(nextPosition))
@@ -97,13 +97,13 @@ namespace CakeEngineering
             while (_currentState.HasEntityAt(currentPosition))
             {
                 var current = _nextState[currentPosition];
-                if ( isPushed && current.HasAttribute("Breakable") && !current.HasAttribute("Movable") || isPushed && current.HasAttribute("Breakable") && !CanMoveEntity(currentPosition, movement) )
+                if ( isPushed && current.HasAttribute("Breakable") && !current.HasAttribute("Pushable") || isPushed && current.HasAttribute("Breakable") && !CanMoveEntity(currentPosition, movement) )
                 {
                     _nextState[currentPosition] = previousEntity;
                     previousEntity = null;
                     break;
                 }
-                else if ( current.HasAttribute("Movable") || !current.HasAttribute("Portal A") && !current.HasAttribute("Portal B") )
+                else if ( current.HasAttribute("Pushable") || !current.HasAttribute("Portal A") && !current.HasAttribute("Portal B") )
                 {
                     _nextState[currentPosition] = previousEntity;
                     currentPosition += movement;

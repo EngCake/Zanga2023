@@ -10,14 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 86a5ae030e0d41d499e9302a7cc7ae8b, type: 3}
-  m_Name: Movable
+  m_Name: Pushable
   m_EditorClassIdentifier: 
-  Name: Movable
-  Description: '<size=60>MOVABLE</size>
-
-
-    <color=yellow>MOVABLE</color> can be
-    put on <color=blue>OBJECTS</color>, and denotes whether the <color=blue>OBJECT</color>
-    can be moved or not by the <color=yellow>PLAYER</color>.'
+  Name: Pushable
   Locked: 0
-  Active: 1
