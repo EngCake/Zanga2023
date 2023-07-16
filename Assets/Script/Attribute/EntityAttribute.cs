@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 namespace CakeEngineering
@@ -10,5 +11,18 @@ namespace CakeEngineering
         public bool Locked;
 
         public EntityAttribute Opposite;
+
+        public override bool Equals(object obj)
+        {
+            return obj is EntityAttribute attribute &&
+                   base.Equals(obj) &&
+                   Name == attribute.Name &&
+                   Locked == attribute.Locked;
+        }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(base.GetHashCode(), Name, Locked, Opposite);
+        }
     }
 }
