@@ -23,6 +23,9 @@ namespace CakeEngineering
         [SerializeField]
         private PlayerInput _playerInput;
 
+        [SerializeField]
+        private GameObject _gameOverText;
+
         private History<LevelState> _gridHistory;
 
         private float _lastInputTime;
@@ -48,6 +51,12 @@ namespace CakeEngineering
             UpdateAllEntities();
         }
 
+        private bool IsGameWinnable()
+        {
+            var winnable = CurrentGridState.FindByAttribute("Player").Count() > 0 && CurrentGridState.FindByAttribute("Win").Count() > 0;
+            return winnable;
+        }
+
         private void Lock()
         {
             _lastInputTime = Time.time;
@@ -60,7 +69,7 @@ namespace CakeEngineering
 
         public void MovePlayer(CallbackContext callbackContext)
         {
-            if (CooldownIsActive() || callbackContext.phase != InputActionPhase.Started)
+            if (CooldownIsActive() || callbackContext.phase != InputActionPhase.Started || !IsGameWinnable())
                 return;
             var movement = callbackContext.ReadValue<Vector2>();
             _gridHistory.CreateNext((LevelState)_gridHistory.Current.Clone());
@@ -72,7 +81,7 @@ namespace CakeEngineering
 
         public void ChooseSelectedEntity(CallbackContext callbackContext)
         {
-            if (CooldownIsActive() || callbackContext.phase != InputActionPhase.Started)
+            if (CooldownIsActive() || callbackContext.phase != InputActionPhase.Started || !IsGameWinnable())
                 return;
             var movement = callbackContext.ReadValue<Vector2>();
             if (movement != Vector2.zero && (movement.x == 0 || movement.y == 0))
@@ -100,7 +109,7 @@ namespace CakeEngineering
 
         public void EnterSelectEntityState(CallbackContext callbackContext)
         {
-            if (CooldownIsActive() || callbackContext.phase != InputActionPhase.Started)
+            if (CooldownIsActive() || callbackContext.phase != InputActionPhase.Started || !IsGameWinnable())
                 return;
             _playerInput.SwitchCurrentActionMap("Select");
             _selectDirection = Vector2.zero;
@@ -109,7 +118,7 @@ namespace CakeEngineering
 
         public void ExitSelectEntityState(CallbackContext callbackContext)
         {
-            if (CooldownIsActive() || callbackContext.phase != InputActionPhase.Started)
+            if (CooldownIsActive() || callbackContext.phase != InputActionPhase.Started || !IsGameWinnable())
                 return;
             _playerInput.SwitchCurrentActionMap("Player");
             if (_selectBox.activeSelf)
@@ -119,7 +128,7 @@ namespace CakeEngineering
 
         public void SelectEntity(CallbackContext callbackContext)
         {
-            if (CooldownIsActive() || callbackContext.phase != InputActionPhase.Started || _selectDirection == Vector2.zero)
+            if (CooldownIsActive() || callbackContext.phase != InputActionPhase.Started || !IsGameWinnable())
                 return;
             var playerPosition = CurrentGridState.PlayerState.Position;
             _tagsScreen.firstEntity = CurrentGridState.PlayerState.Entity;
@@ -139,6 +148,7 @@ namespace CakeEngineering
         private void UpdateAllEntities()
         {
             _entities.ForEach(entity => entity.UpdateCurrentState());
+            _gameOverText.SetActive(!IsGameWinnable());
         }
 
         public LevelState CurrentGridState => _gridHistory.Current;
