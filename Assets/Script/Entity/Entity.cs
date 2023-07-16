@@ -35,7 +35,7 @@ namespace CakeEngineering
         private void Awake()
         {
             _transform = GetComponent<Transform>();
-            _initialState = new EntityState(true, _entityType, _entityName, _initialAttributes, this, Position);
+            _initialState = new EntityState(_initialAttributes, this, Position, Vector2.zero);
             _currentState = _initialState;
             _spriteRenderer = GetComponent<SpriteRenderer>();
             _spriteRenderer.sprite = _normalSprite;
@@ -63,8 +63,10 @@ namespace CakeEngineering
 
         public Vector2 Position => _transform.position;
 
-        public EntityState InitialState => _initialState;
+        public string Name => _entityName;
 
-        public EntityState CurrentState => _currentState;
+        public EntityType Type => _entityType;
+
+        public EntityState InitialState => _initialState;
     }
 }

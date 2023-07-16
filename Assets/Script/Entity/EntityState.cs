@@ -7,40 +7,30 @@ using UnityEngine;
 namespace CakeEngineering
 {
     [Serializable]
-    public class EntityState : IEnumerable<EntityAttribute>, ICloneable
+    public class EntityState : ICloneable
     {
-        private readonly bool _isActive;
-
-        private readonly EntityType _type;
-
-        private readonly string _name;
-
         private readonly List<EntityAttribute> _attributes;
 
         private readonly Entity _entity;
 
         private readonly Vector2 _position;
 
-        public bool Active => _isActive;
-
-        public string Name => _name;
-
-        public EntityType Type => _type;
-
-        public Vector2 Position => _position;
-
-        public Entity Entity => _entity;
+        private readonly Vector2 _velocity;
 
         public List<EntityAttribute> Attributes => _attributes;
 
-        public EntityState(bool isActive, EntityType type, string name, List<EntityAttribute> attributes, Entity entity, Vector2 position)
+        public Entity Entity => _entity;
+
+        public Vector2 Position => _position;
+
+        public Vector2 Velocity => _velocity;
+
+        public EntityState(List<EntityAttribute> attributes, Entity entity, Vector2 position, Vector2 velocity)
         {
-            _isActive = isActive;
-            _type = type;
-            _name = name;
             _attributes = attributes;
             _entity = entity;
             _position = position;
+            _velocity = velocity;
         }
 
         public bool HasAttribute(string attributeName)
@@ -48,27 +38,17 @@ namespace CakeEngineering
             return _attributes.Any(attribute => attribute.Name == attributeName);
         }
 
-        public IEnumerator<EntityAttribute> GetEnumerator()
-        {
-            return _attributes.GetEnumerator();
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
-
         public object Clone()
         {
             var attributes = new List<EntityAttribute>();
-            var clone = new EntityState(_isActive, _type, _name, attributes, _entity, _position);
+            var clone = new EntityState(attributes, _entity, _position, _velocity);
             _attributes.ForEach(attribute => clone._attributes.Add(attribute));
             return clone;
         }
         
         public EntityState WithNewPosition(Vector2 position)
         {
-            return new EntityState(_isActive, _type, _name, _attributes, _entity, position);
+            return new EntityState(_attributes, _entity, position, _velocity);
         }
 
         public EntityState WithAttribute(EntityAttribute attribute)
@@ -78,7 +58,7 @@ namespace CakeEngineering
             var attributes = new List<EntityAttribute>();
             _attributes.ForEach(attribute => attributes.Add(attribute));
             attributes.Add(attribute);
-            return new EntityState(_isActive, _type, _name, attributes, _entity, _position);
+            return new EntityState(attributes, _entity, _position, _velocity);
         }
 
         public EntityState WithoutAttribute(EntityAttribute attribute)
@@ -87,7 +67,7 @@ namespace CakeEngineering
             foreach (var attr in _attributes)
                 if (attr.Name != attribute.Name)
                     attributes.Add(attr);
-            return new EntityState(_isActive, _type, _name, attributes, _entity, _position);
+            return new EntityState(attributes, _entity, _position, _velocity);
         }
     }
 
