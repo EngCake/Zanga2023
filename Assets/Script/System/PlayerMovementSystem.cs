@@ -18,15 +18,19 @@ namespace CakeEngineering
                 MoveEntity(playerPosition, playerMovement);
         }
 
-        public bool CanMoveEntity(Vector2 entityPosition, Vector2 movement)
+        public bool CanMoveEntity(Vector2 entityPosition, Vector2 movement, bool isPushed = false)
         {
             var currentEntity = _currentState[entityPosition];
-            if (currentEntity.HasAttribute("Player") || currentEntity.HasAttribute("Movable"))
+            if (currentEntity.HasAttribute("Breakable") && isPushed)
+            {
+                return true;
+            }
+            else if (currentEntity.HasAttribute("Player") || currentEntity.HasAttribute("Movable"))
             {
                 var nextPosition = entityPosition + movement;
                 if (!_currentState.HasEntityAt(nextPosition))
                     return true;
-                return CanMoveEntity(nextPosition, movement);
+                return CanMoveEntity(nextPosition, movement, true);
             }
             else if (currentEntity.HasAttribute("Portal A") || currentEntity.HasAttribute("Portal B"))
             {
@@ -43,10 +47,17 @@ namespace CakeEngineering
         {
             var previousEntity = (EntityState)null;
             var currentPosition = entityPosition;
+            var isPushed = false;
             while (_currentState.HasEntityAt(currentPosition))
             {
                 var current = _nextState[currentPosition];
-                if ( !current.HasAttribute("Portal A") && !current.HasAttribute("Portal B") )
+                if ( isPushed && current.HasAttribute("Breakable") && !current.HasAttribute("Movable") || isPushed && current.HasAttribute("Breakable") && !CanMoveEntity(currentPosition, movement) )
+                {
+                    _nextState[currentPosition] = previousEntity;
+                    previousEntity = null;
+                    break;
+                }
+                else if ( current.HasAttribute("Movable") || !current.HasAttribute("Portal A") && !current.HasAttribute("Portal B") )
                 {
                     _nextState[currentPosition] = previousEntity;
                     currentPosition += movement;
@@ -57,8 +68,10 @@ namespace CakeEngineering
                     currentPosition = FindOtherPortalPosition(current) + movement;
                     previousEntity = previousEntity.WithNewPosition(currentPosition);
                 }
+                isPushed = true;
             }
-            _nextState[currentPosition] = previousEntity;
+            if (previousEntity != null)
+                _nextState[currentPosition] = previousEntity;
         }
 
         private Vector2 FindOtherPortalPosition(EntityState portal)
