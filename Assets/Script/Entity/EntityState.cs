@@ -62,7 +62,7 @@ namespace CakeEngineering
 
         public EntityState WithAttribute(EntityAttribute attribute)
         {
-            if (_attributes.Contains(attribute) || _attributes.Contains(attribute.Opposite))
+            if (_attributes.Any(attr => attr.name == attribute.Name) || _attributes.Any(attr => attr.Name == attribute.Opposite.Name))
                 return null;
             var attributes = new List<EntityAttribute>();
             _attributes.ForEach(attribute => attributes.Add(attribute));
