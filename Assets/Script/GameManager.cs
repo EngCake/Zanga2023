@@ -99,6 +99,7 @@ namespace CakeEngineering
                 if (!_isInSelectState)
                 {
                     _gridHistory.CreateNext((GridState) _gridHistory.Current.Clone());
+                    CurrentGridState[CurrentGridState.PlayerState.Position] = CurrentGridState.PlayerState.WithVelocity(playerMovement);
                     RunAllSystems(playerMovement);
                     UpdateAllEntities();
                     Lock();
@@ -160,7 +161,7 @@ namespace CakeEngineering
         private void RunAllSystems(Vector2 playerMovement)
         {
             foreach (var system in _systems)
-                system.Process(playerMovement);
+                system.Process();
         }
 
         private void UpdateAllEntities()

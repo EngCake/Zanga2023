@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace CakeEngineering
 {
@@ -48,7 +49,15 @@ namespace CakeEngineering
         
         public EntityState WithNewPosition(Vector2 position)
         {
-            return new EntityState(_attributes, _entity, position, _velocity);
+            var attributes = new List<EntityAttribute>();
+            _attributes.ForEach(attribute => attributes.Add(attribute));
+            return new EntityState(attributes, _entity, position, _velocity);
+        }
+        public EntityState WithVelocity(Vector2 velocity)
+        {
+            var attributes = new List<EntityAttribute>();
+            _attributes.ForEach(attribute => attributes.Add(attribute));
+            return new EntityState(attributes, _entity, _position, velocity);
         }
 
         public EntityState WithAttribute(EntityAttribute attribute)

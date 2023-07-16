@@ -11,6 +11,6 @@ namespace CakeEngineering
             _gameManager = GetComponentInParent<GameManager>();
         }
 
-        public abstract void Process(Vector2 playerMovement);
+        public abstract void Process();
     }
 }

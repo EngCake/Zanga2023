@@ -10,13 +10,13 @@ namespace CakeEngineering
 
         private GridState _nextState;
 
-        public override void Process(Vector2 playerMovement)
+        public override void Process()
         {
             _currentState = (GridState)_gameManager.CurrentGridState.Clone();
             _nextState = _gameManager.CurrentGridState;
-            var playerPosition = _currentState.PlayerState.Position;
-            if (CanMoveEntity(playerPosition, playerMovement))
-                MoveEntity(playerPosition, playerMovement);
+            var playerState = _currentState.PlayerState;
+            if (CanMoveEntity(playerState.Position, playerState.Velocity))
+                MoveEntity(playerState.Position, playerState.Velocity);
         }
 
         public bool CanMoveEntity(Vector2 entityPosition, Vector2 movement, bool isPushed = false)
