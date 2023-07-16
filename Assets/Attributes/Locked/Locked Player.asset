@@ -14,4 +14,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Name: Player
   Locked: 1
-  Opposite: {fileID: 0}
+  Opposite: {fileID: 11400000, guid: 65de5e0a65ff7ee49b58434b3d74f41b, type: 2}

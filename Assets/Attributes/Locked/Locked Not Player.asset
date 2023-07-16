@@ -10,8 +10,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 86a5ae030e0d41d499e9302a7cc7ae8b, type: 3}
-  m_Name: Player
+  m_Name: Locked Not Player
   m_EditorClassIdentifier: 
-  Name: Player
+  Name: Locked Not Player
   Locked: 0
-  Opposite: {fileID: 11400000, guid: 10bd2e4d7cdc72941b0cd3db3c26f56f, type: 2}
+  Opposite: {fileID: 11400000, guid: 30a732d221383bc45b7c3011398e1127, type: 2}
