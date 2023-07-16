@@ -97,7 +97,7 @@ namespace CakeEngineering
                 Vector2 nextPosition = otherPortalPosition + movement;
                 if (!_currentState.HasEntityAt(nextPosition))
                     return true;
-                return CanMoveEntity(nextPosition, movement, currentEntityState.HasAttribute("Player"));
+                return CanMoveEntity(nextPosition, movement, true, currentEntityState.HasAttribute("Player"));
             }
             return false;
         }
