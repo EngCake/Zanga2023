@@ -1,3 +1,4 @@
+using System.Linq;
 using UnityEngine;
 
 namespace CakeEngineering
@@ -19,13 +20,22 @@ namespace CakeEngineering
 
         public bool CanMoveEntity(Vector2 entityPosition, Vector2 movement)
         {
-            var nextPosition = entityPosition + movement;
-            if (!_currentState.HasEntityAt(nextPosition))
-                return true;
-            var collidingEntity = _currentState[nextPosition];
-            var isCollidingEntityMovable = collidingEntity.HasAttribute("Movable");
-            if (isCollidingEntityMovable)
+            var currentEntity = _currentState[entityPosition];
+            if (currentEntity.HasAttribute("Player") || currentEntity.HasAttribute("Movable"))
+            {
+                var nextPosition = entityPosition + movement;
+                if (!_currentState.HasEntityAt(nextPosition))
+                    return true;
                 return CanMoveEntity(nextPosition, movement);
+            }
+            else if (currentEntity.HasAttribute("Portal A") || currentEntity.HasAttribute("Portal B"))
+            {
+                var otherPortalPosition = FindOtherPortalPosition(currentEntity);
+                Vector2 nextPosition = otherPortalPosition + movement;
+                if (!_currentState.HasEntityAt(nextPosition))
+                    return true;
+                return CanMoveEntity(nextPosition, movement);
+            }
             return false;
         }
 
@@ -35,12 +45,27 @@ namespace CakeEngineering
             var currentPosition = entityPosition;
             while (_currentState.HasEntityAt(currentPosition))
             {
-                var temp = _nextState[currentPosition];
-                _nextState[currentPosition] = previousEntity;
-                previousEntity = temp.WithNewPosition(currentPosition + movement);
-                currentPosition += movement;
+                var current = _nextState[currentPosition];
+                if ( !current.HasAttribute("Portal A") && !current.HasAttribute("Portal B") )
+                {
+                    _nextState[currentPosition] = previousEntity;
+                    currentPosition += movement;
+                    previousEntity = current.WithNewPosition(currentPosition);
+                }
+                else
+                {
+                    currentPosition = FindOtherPortalPosition(current) + movement;
+                    previousEntity = previousEntity.WithNewPosition(currentPosition);
+                }
             }
             _nextState[currentPosition] = previousEntity;
+        }
+
+        private Vector2 FindOtherPortalPosition(EntityState portal)
+        {
+            return portal.HasAttribute("Portal A") ?
+                _currentState.FindByAttribute("Portal B").First().Position :
+                _currentState.FindByAttribute("Portal A").First().Position;
         }
     }
 }

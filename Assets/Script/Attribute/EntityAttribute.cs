@@ -2,13 +2,10 @@ using UnityEngine;
 
 namespace CakeEngineering
 {
-    [CreateAssetMenu(fileName = "ActionlessAttribute", menuName = "Attributes/Actionless Attribute")]
+    [CreateAssetMenu(fileName = "Attribute", menuName = "Attribute")]
     public class EntityAttribute : ScriptableObject
     {
         public string Name;
-
-        [TextArea]
-        public string Description;
 
         public bool Locked;
 
