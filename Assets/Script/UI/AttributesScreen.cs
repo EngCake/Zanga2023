@@ -202,7 +202,7 @@ namespace CakeEngineering
             else if (!_lock && _cancel.IsPressed())
             {
                 gameObject.SetActive(false);
-                _gameManager.EnablePlayerControl();
+                _gameManager.EnablePlayerControls();
                 if (!_dirty)
                 {
                     _gameManager.Undo();

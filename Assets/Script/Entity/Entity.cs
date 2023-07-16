@@ -66,7 +66,14 @@ namespace CakeEngineering
             _currentState = state;
         }
 
-        public Vector2 Position => _transform.position;
+        public Vector2 Position {
+            get
+            {
+                if (_transform.position.x != Mathf.Floor(_transform.position.x) || _transform.position.y != Mathf.Floor(_transform.position.y))
+                    Debug.LogWarning($"The entity: {Name} at position: {_transform.position} isn't at correct position");
+                return _transform.position;
+            }
+        }
 
         public string Name => _entityName;
 

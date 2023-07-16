@@ -16,6 +16,9 @@ namespace CakeEngineering
         [SerializeField]
         private GameObject _selectBox;
 
+        [SerializeField]
+        private LevelLoader _levelLoader;
+
         private History<LevelState> _gridHistory;
 
         private PlayerInput _playerInput;
@@ -54,26 +57,27 @@ namespace CakeEngineering
             _gridHistory.CreateNext(initialState);
             _selectBox.SetActive(false);
             UpdateAllEntities();
+            DisablePlayerControls();
         }
 
         private void OnEnable()
         {
-            EnablePlayerControl();
+            EnablePlayerControls();
         }
 
         private void OnDisable()
         {
-            DisablePlayerControler();
+            DisablePlayerControls();
         }
 
-        public void EnablePlayerControl()
+        public void EnablePlayerControls()
         {
             _move.Enable();
             _undo.Enable();
             _select.Enable();
         }
 
-        public void DisablePlayerControler()
+        public void DisablePlayerControls()
         {
             _move.Disable();
             _undo.Disable();
@@ -139,7 +143,7 @@ namespace CakeEngineering
                     _tagsScreen.firstEntity = CurrentGridState.PlayerState.Entity;
                     _tagsScreen.secondEntity = CurrentGridState[playerPosition + _selectDirection].Entity;
                     _gridHistory.CreateNext((LevelState) _gridHistory.Current.Clone());
-                    DisablePlayerControler();
+                    DisablePlayerControls();
                     _tagsScreen.gameObject.SetActive(true);
                     _selectBox.SetActive(false);
                     _isInSelectState = false;
@@ -173,7 +177,8 @@ namespace CakeEngineering
 
         public void Win()
         {
-            Debug.Log("You win!");
+            DisablePlayerControls();
+            _levelLoader.TransitionToNextScene();
         }
     }
 }
