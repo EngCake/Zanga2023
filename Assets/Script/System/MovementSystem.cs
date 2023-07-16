@@ -47,7 +47,11 @@ namespace CakeEngineering
                 if (CanMoveEntity(currentEntityPosition, currentEntityVelocity))
                     MoveEntity(currentEntityPosition, currentEntityVelocity);
                 else
+                {
                     _nextState[currentEntityPosition] = horizontalEntityState.WithVelocity(-currentEntityVelocity);
+                    if (CanMoveEntity(currentEntityPosition, -currentEntityVelocity))
+                        MoveEntity(currentEntityPosition, -currentEntityVelocity);
+                }
                 _currentState = (LevelState)_nextState.Clone();
             }
         }
