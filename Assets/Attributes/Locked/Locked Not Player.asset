@@ -12,6 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 86a5ae030e0d41d499e9302a7cc7ae8b, type: 3}
   m_Name: Locked Not Player
   m_EditorClassIdentifier: 
-  Name: Locked Not Player
-  Locked: 0
+  Name: Not Player
+  Locked: 1
   Opposite: {fileID: 11400000, guid: 30a732d221383bc45b7c3011398e1127, type: 2}
