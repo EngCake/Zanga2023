@@ -104,3 +104,5 @@ MonoBehaviour:
   _initialAttributes:
   - {fileID: 11400000, guid: b70f6b14f47d992429f0ca5bc01fa0ec, type: 2}
   - {fileID: 11400000, guid: 2fcc70c4160d2f54f947fe79a8e4d17a, type: 2}
+  - {fileID: 11400000, guid: 73a3d57e75235ca4bbe59e01210f6f99, type: 2}
+  _initialVelocity: {x: 0, y: 0}
