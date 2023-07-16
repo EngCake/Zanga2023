@@ -34,6 +34,8 @@ namespace CakeEngineering
 
         private Vector2 _selectDirection;
 
+        private bool _win;
+
         private void Awake()
         {
             _selectDirection = Vector2.zero;
@@ -43,6 +45,7 @@ namespace CakeEngineering
         private void Start()
         {
             _lastInputTime = Time.time;
+            _win = false;
             var entities = GetComponentsInChildren<Entity>();
             _entities = entities.ToList();
             var initialState = new LevelState(entities);
@@ -148,13 +151,14 @@ namespace CakeEngineering
         private void UpdateAllEntities()
         {
             _entities.ForEach(entity => entity.UpdateCurrentState());
-            _gameOverText.SetActive(!IsGameWinnable());
+            _gameOverText.SetActive(!_win && !IsGameWinnable());
         }
 
         public LevelState CurrentGridState => _gridHistory.Current;
 
         public void Win()
         {
+            _win = true;
             _levelLoader.TransitionToNextScene();
         }
     }
