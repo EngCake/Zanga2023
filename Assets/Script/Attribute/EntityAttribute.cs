@@ -8,5 +8,7 @@ namespace CakeEngineering
         public string Name;
 
         public bool Locked;
+
+        public EntityAttribute Opposite;
     }
 }

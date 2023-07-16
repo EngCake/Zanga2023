@@ -10,8 +10,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 86a5ae030e0d41d499e9302a7cc7ae8b, type: 3}
-  m_Name: Breakable
+  m_Name: Unbreakable
   m_EditorClassIdentifier: 
-  Name: Breakable
+  Name: Unbreakable
   Locked: 0
-  Opposite: {fileID: 11400000, guid: 81a9daf0693842d46825c8521ce7c420, type: 2}
+  Opposite: {fileID: 11400000, guid: 2fcc70c4160d2f54f947fe79a8e4d17a, type: 2}
