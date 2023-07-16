@@ -17,6 +17,23 @@ namespace CakeEngineering
             var playerState = _currentState.PlayerState;
             if (CanMoveEntity(playerState.Position, playerState.Velocity))
                 MoveEntity(playerState.Position, playerState.Velocity);
+            if (_nextState.PlayerState.Position == _currentState.PlayerState.Position)
+            {
+                var playerVelocty = playerState.Velocity;
+                var playerVelocityRotated = new Vector2(playerVelocty.y, -playerVelocty.x);
+                ShakeEntity(_currentState.PlayerState.Position, playerVelocityRotated);
+            }
+        }
+
+        private void ShakeEntity(Vector2 entityPosition, Vector2 direction)
+        {
+            var gameObject = _nextState[entityPosition].Entity.gameObject;
+            var delta = direction * 0.4f;
+            LeanTween.moveLocal(gameObject, entityPosition + delta, 0.2f / 8.0f)
+                .setOnComplete(_ => LeanTween.moveLocal(gameObject, entityPosition, 0.2f / 8.0f))
+                .setOnComplete(_ => LeanTween.moveLocal(gameObject, entityPosition -delta, 0.2f / 8.0f))
+                .setOnComplete(_ => LeanTween.moveLocal(gameObject, entityPosition, 0.2f / 8.0f))
+                .setRepeat(2);
         }
 
         public bool CanMoveEntity(Vector2 entityPosition, Vector2 movement, bool isPushed = false)
