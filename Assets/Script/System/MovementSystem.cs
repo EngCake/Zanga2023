@@ -12,16 +12,44 @@ namespace CakeEngineering
 
         public override void Process()
         {
-            _currentState = (GridState)_gameManager.CurrentGridState.Clone();
+            _currentState = (GridState) _gameManager.CurrentGridState.Clone();
             _nextState = _gameManager.CurrentGridState;
             var playerState = _currentState.PlayerState;
             if (CanMoveEntity(playerState.Position, playerState.Velocity))
+            {
                 MoveEntity(playerState.Position, playerState.Velocity);
-            if (_nextState.PlayerState.Position == _currentState.PlayerState.Position)
+                _currentState = (GridState) _nextState.Clone();
+            }
+            else
             {
                 var playerVelocty = playerState.Velocity;
                 var playerVelocityRotated = new Vector2(playerVelocty.y, -playerVelocty.x);
                 ShakeEntity(_currentState.PlayerState.Position, playerVelocityRotated);
+            }
+            var horizontalEntitiesStates = _currentState.FindByAttribute("Moving Horizontally");
+            foreach (var horizontalEntityState in horizontalEntitiesStates)
+            {
+                if (horizontalEntityState.HasAttribute("Player"))
+                    continue;
+                var currentEntityPosition = horizontalEntityState.Position;
+                var currentEntityVelocity = horizontalEntityState.Velocity;
+                if (CanMoveEntity(currentEntityPosition, currentEntityVelocity))
+                    MoveEntity(currentEntityPosition, currentEntityVelocity);
+                else
+                    _nextState[currentEntityPosition] = horizontalEntityState.WithVelocity(-currentEntityVelocity);
+                _currentState = (GridState) _nextState.Clone();
+            }
+            var verticalEntitiesStates = _currentState.FindByAttribute("Moving Vertically");
+            foreach (var verticalEntityState in verticalEntitiesStates)
+            {
+                if (verticalEntityState.HasAttribute("Player"))
+                    continue;
+                var currentEntityPosition = verticalEntityState.Position;
+                var currentEntityVelocity = verticalEntityState.Velocity;
+                if (CanMoveEntity(currentEntityPosition, currentEntityVelocity))
+                    MoveEntity(currentEntityPosition, currentEntityVelocity);
+                else
+                    _nextState[currentEntityPosition] = verticalEntityState.WithVelocity(-currentEntityVelocity);
             }
         }
 
@@ -38,21 +66,21 @@ namespace CakeEngineering
 
         public bool CanMoveEntity(Vector2 entityPosition, Vector2 movement, bool isPushed = false)
         {
-            var currentEntity = _currentState[entityPosition];
-            if (currentEntity.HasAttribute("Breakable") && isPushed)
+            var currentEntityState = _currentState[entityPosition];
+            if (currentEntityState.HasAttribute("Breakable") && isPushed)
             {
                 return true;
             }
-            else if (currentEntity.HasAttribute("Player") || currentEntity.HasAttribute("Movable"))
+            else if (!isPushed && CanMoveByItself(currentEntityState) || isPushed && currentEntityState.HasAttribute("Movable"))
             {
                 var nextPosition = entityPosition + movement;
                 if (!_currentState.HasEntityAt(nextPosition))
                     return true;
                 return CanMoveEntity(nextPosition, movement, true);
             }
-            else if (currentEntity.HasAttribute("Portal A") || currentEntity.HasAttribute("Portal B"))
+            else if (currentEntityState.HasAttribute("Portal A") || currentEntityState.HasAttribute("Portal B"))
             {
-                var otherPortalPosition = FindOtherPortalPosition(currentEntity);
+                var otherPortalPosition = FindOtherPortalPosition(currentEntityState);
                 Vector2 nextPosition = otherPortalPosition + movement;
                 if (!_currentState.HasEntityAt(nextPosition))
                     return true;
@@ -90,6 +118,11 @@ namespace CakeEngineering
             }
             if (previousEntity != null)
                 _nextState[currentPosition] = previousEntity;
+        }
+
+        private bool CanMoveByItself(EntityState entityState)
+        {
+            return entityState.HasAttribute("Player") || entityState.HasAttribute("Moving Horizontally") || entityState.HasAttribute("Moving Vertically");
         }
 
         private Vector2 FindOtherPortalPosition(EntityState portal)

@@ -92,8 +92,6 @@ namespace CakeEngineering
                     tags.Add("color=grey");
                     tags.Add("i");
                 }
-                if (!attribute.Active)
-                    tags.Add("s");
                 if (_cursor != null && column == _cursor.Column && i == _cursor.Row)
                     tags.Add("color=yellow");
                 var openingTag = tags.Count > 0 ? $"<{string.Join("><", tags)}>" : "";
@@ -218,7 +216,7 @@ namespace CakeEngineering
             var secondEntityState = _gameManager.CurrentGridState.FindState(secondEntity);
             var attributesList = column == FIRST_COLUMN ? firstEntityState.Attributes : secondEntityState.Attributes;
             for (var i = Mathf.Clamp(fromRow, 0, attributesList.Count - 1); i < attributesList.Count && i >= 0; i += direction)
-                if (attributesList[i].Active && !attributesList[i].Locked)
+                if (!attributesList[i].Locked)
                     return new Cursor { Column = column, Row = i };
             return null;
         }

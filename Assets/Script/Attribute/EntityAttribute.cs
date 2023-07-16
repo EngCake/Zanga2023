@@ -8,7 +8,5 @@ namespace CakeEngineering
         public string Name;
 
         public bool Locked;
-
-        public bool Active;
     }
 }

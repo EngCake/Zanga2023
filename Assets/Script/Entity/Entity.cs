@@ -19,8 +19,13 @@ namespace CakeEngineering
         [SerializeField]
         private Sprite _burningSprite;
 
+
+        [Header("Initial State")]
         [SerializeField]
         private List<EntityAttribute> _initialAttributes;
+
+        [SerializeField]
+        private Vector2 _initialVelocity;
 
         private Transform _transform;
 
@@ -35,7 +40,7 @@ namespace CakeEngineering
         private void Awake()
         {
             _transform = GetComponent<Transform>();
-            _initialState = new EntityState(_initialAttributes, this, Position, Vector2.zero);
+            _initialState = new EntityState(_initialAttributes, this, Position, _initialVelocity);
             _currentState = _initialState;
             _spriteRenderer = GetComponent<SpriteRenderer>();
             _spriteRenderer.sprite = _normalSprite;
@@ -68,5 +73,7 @@ namespace CakeEngineering
         public EntityType Type => _entityType;
 
         public EntityState InitialState => _initialState;
+
+        public Vector2 InitialVelocity => _initialVelocity;
     }
 }
