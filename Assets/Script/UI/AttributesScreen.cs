@@ -3,6 +3,7 @@ using System.Text;
 using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using static UnityEngine.InputSystem.InputAction;
 
 namespace CakeEngineering
 {
@@ -20,7 +21,10 @@ namespace CakeEngineering
         private static readonly int SECOND_COLUMN = 1;
 
         [SerializeField]
-        private LevelManager _gameManager;
+        private LevelManager _levelManager;
+
+        [SerializeField]
+        private PlayerInput _playerInput;
 
         public Entity firstEntity;
 
@@ -32,48 +36,23 @@ namespace CakeEngineering
 
         private Cursor _cursor;
 
-        private PlayerInput _playerInput;
+        private float _lastInputTime;
 
-        private InputAction _navigate;
-
-        private InputAction _select;
-
-        private InputAction _cancel;
-
-        private bool _dirty;
-
-        private bool _lock;
-
-        private void Awake()
+        private void Start()
         {
-            _playerInput = new PlayerInput();
-            _navigate = _playerInput.UI.Navigate;
-            _select = _playerInput.UI.Select;
-            _cancel = _playerInput.UI.Cancel;
-            _dirty = false;
-            _lock = false;
+            _lastInputTime = Time.time;
         }
 
         private void OnEnable()
         {
             _cursor = FindValidCursorPosition(FIRST_COLUMN) ?? FindValidCursorPosition(SECOND_COLUMN);
-            _navigate.Enable();
-            _select.Enable();
-            _cancel.Enable();
             Redraw();
-        }
-
-        private void OnDisable()
-        {
-            _navigate.Disable();
-            _select.Disable();
-            _cancel.Disable();
         }
 
         private void Redraw()
         {
-            var firstEntityState = _gameManager.CurrentGridState.FindState(firstEntity);
-            var secondEntityState = _gameManager.CurrentGridState.FindState(secondEntity);
+            var firstEntityState = _levelManager.CurrentGridState.FindState(firstEntity);
+            var secondEntityState = _levelManager.CurrentGridState.FindState(secondEntity);
             firstListText.text = DrawEntityList(firstEntityState, FIRST_COLUMN);
             secondListText.text = DrawEntityList(secondEntityState, SECOND_COLUMN);
         }
@@ -103,19 +82,20 @@ namespace CakeEngineering
 
         private void Lock()
         {
-            _lock = true;
-            Invoke(nameof(Unlock), 0.2f);
+            _lastInputTime = Time.time;
         }
 
-        private void Unlock()
+        private bool CooldownIsActive()
         {
-            _lock = false;
+            return Time.time - _lastInputTime <= 0.13f;
         }
 
-        private void Update()
+        public void Navigate(CallbackContext callbackContext)
         {
-            var navigateDirection = _navigate.ReadValue<Vector2>();
-            if (!_lock && _cursor != null && navigateDirection != Vector2.zero)
+            if (CooldownIsActive() || callbackContext.phase != InputActionPhase.Started)
+                return;
+            var navigateDirection = callbackContext.ReadValue<Vector2>();
+            if (_cursor != null && navigateDirection != Vector2.zero)
             {
                 if (navigateDirection == Vector2.up)
                 {
@@ -158,62 +138,62 @@ namespace CakeEngineering
                     }
                 }
             }
-            else if (!_lock && _select.IsPressed() && _cursor != null)
+        }
+
+        public void MoveAttributes(CallbackContext callbackContext)
+        {
+            if (CooldownIsActive() || callbackContext.phase != InputActionPhase.Started)
+                return;
+            var firstEntityState = _levelManager.CurrentGridState.FindState(firstEntity);
+            var secondEntityState = _levelManager.CurrentGridState.FindState(secondEntity);
+            var attributesList = _cursor.Column == FIRST_COLUMN ? firstEntityState.Attributes : secondEntityState.Attributes;
+            var selectedAttribute = attributesList[_cursor.Row];
+            if (_cursor.Column == FIRST_COLUMN)
             {
-                var firstEntityState = _gameManager.CurrentGridState.FindState(firstEntity);
-                var secondEntityState = _gameManager.CurrentGridState.FindState(secondEntity);
-                var attributesList = _cursor.Column == FIRST_COLUMN ? firstEntityState.Attributes : secondEntityState.Attributes;
-                var selectedAttribute = attributesList[_cursor.Row];
-                if (_cursor.Column == FIRST_COLUMN)
+                var modifiedFirstEntity = firstEntityState.WithoutAttribute(selectedAttribute);
+                var modifiedSecondEntity = secondEntityState.WithAttribute(selectedAttribute);
+                if (modifiedSecondEntity != null && modifiedFirstEntity != null)
                 {
-                    var modifiedFirstEntity = firstEntityState.WithoutAttribute(selectedAttribute);
-                    var modifiedSecondEntity = secondEntityState.WithAttribute(selectedAttribute);
-                    if (modifiedSecondEntity != null && modifiedFirstEntity != null)
-                    {
-                        _gameManager.CurrentGridState[secondEntityState.Position] = modifiedSecondEntity;
-                        _gameManager.CurrentGridState[firstEntityState.Position] = modifiedFirstEntity;
-                        _dirty = true;
-                        _cursor =   FindValidCursorPosition(FIRST_COLUMN, _cursor.Column, 1) ??
-                                    FindValidCursorPosition(FIRST_COLUMN, _cursor.Column, -1) ??
-                                    FindValidCursorPosition(SECOND_COLUMN, _cursor.Column, 1) ??
-                                    FindValidCursorPosition(SECOND_COLUMN, _cursor.Column, -1);
-                        Redraw();
-                        Lock();
-                    }
-                }
-                else
-                {
-                    var modifiedFirstState = firstEntityState.WithAttribute(selectedAttribute);
-                    var modifiedSecondState = secondEntityState.WithoutAttribute(selectedAttribute);
-                    if (modifiedSecondState != null && modifiedFirstState != null)
-                    {
-                        _gameManager.CurrentGridState[secondEntityState.Position] = modifiedSecondState;
-                        _gameManager.CurrentGridState[firstEntityState.Position] = modifiedFirstState;
-                        _dirty = true;
-                        _cursor = FindValidCursorPosition(SECOND_COLUMN, _cursor.Column, 1) ??
-                                    FindValidCursorPosition(SECOND_COLUMN, _cursor.Column, -1) ??
-                                    FindValidCursorPosition(FIRST_COLUMN, _cursor.Column, 1) ??
-                                    FindValidCursorPosition(FIRST_COLUMN, _cursor.Column, -1);
-                        Redraw();
-                        Lock();
-                    }
+                    _levelManager.CurrentGridState[secondEntityState.Position] = modifiedSecondEntity;
+                    _levelManager.CurrentGridState[firstEntityState.Position] = modifiedFirstEntity;
+                    _cursor = FindValidCursorPosition(FIRST_COLUMN, _cursor.Column, 1) ??
+                                FindValidCursorPosition(FIRST_COLUMN, _cursor.Column, -1) ??
+                                FindValidCursorPosition(SECOND_COLUMN, _cursor.Column, 1) ??
+                                FindValidCursorPosition(SECOND_COLUMN, _cursor.Column, -1);
+                    Redraw();
+                    Lock();
                 }
             }
-            else if (!_lock && _cancel.IsPressed())
+            else
             {
-                gameObject.SetActive(false);
-                _gameManager.EnablePlayerControls();
-                if (!_dirty)
+                var modifiedFirstState = firstEntityState.WithAttribute(selectedAttribute);
+                var modifiedSecondState = secondEntityState.WithoutAttribute(selectedAttribute);
+                if (modifiedSecondState != null && modifiedFirstState != null)
                 {
-                    _gameManager.Undo();
+                    _levelManager.CurrentGridState[secondEntityState.Position] = modifiedSecondState;
+                    _levelManager.CurrentGridState[firstEntityState.Position] = modifiedFirstState;
+                    _cursor = FindValidCursorPosition(SECOND_COLUMN, _cursor.Column, 1) ??
+                                FindValidCursorPosition(SECOND_COLUMN, _cursor.Column, -1) ??
+                                FindValidCursorPosition(FIRST_COLUMN, _cursor.Column, 1) ??
+                                FindValidCursorPosition(FIRST_COLUMN, _cursor.Column, -1);
+                    Redraw();
+                    Lock();
                 }
             }
         }
 
+        public void Cancel(CallbackContext callbackContext)
+        {
+            if (CooldownIsActive() || callbackContext.phase != InputActionPhase.Started)
+                return;
+            gameObject.SetActive(false);
+            _playerInput.SwitchCurrentActionMap("Player");
+        }
+
         private Cursor FindValidCursorPosition(int column, int fromRow = 0, int direction = 1)
         {
-            var firstEntityState = _gameManager.CurrentGridState.FindState(firstEntity);
-            var secondEntityState = _gameManager.CurrentGridState.FindState(secondEntity);
+            var firstEntityState = _levelManager.CurrentGridState.FindState(firstEntity);
+            var secondEntityState = _levelManager.CurrentGridState.FindState(secondEntity);
             var attributesList = column == FIRST_COLUMN ? firstEntityState.Attributes : secondEntityState.Attributes;
             for (var i = Mathf.Clamp(fromRow, 0, attributesList.Count - 1); i < attributesList.Count && i >= 0; i += direction)
                 if (!attributesList[i].Locked)

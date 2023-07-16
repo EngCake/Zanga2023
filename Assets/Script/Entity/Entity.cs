@@ -52,15 +52,15 @@ namespace CakeEngineering
             var state = _gameManager.CurrentGridState.FindState(this);
             if (state == null && _currentState != null)
             {
-                LeanTween.color(gameObject, Color.clear, 0.2f);
+                LeanTween.color(gameObject, Color.clear, 0.13f);
             }
             else if (state != null && _currentState == null)
             {
-                LeanTween.color(gameObject, Color.white, 0.2f);
+                LeanTween.color(gameObject, Color.white, 0.13f);
             }
             if (state != null)
             {
-                LeanTween.moveLocal(gameObject, state.Position, 0.2f).setEaseInOutCubic();
+                LeanTween.moveLocal(gameObject, state.Position, 0.13f).setEaseInOutCubic();
                 _spriteRenderer.sprite = state.HasAttribute("Burning") ? _burningSprite : _normalSprite;
             }
             _currentState = state;

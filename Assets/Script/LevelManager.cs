@@ -2,6 +2,7 @@
 using System.Linq;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using static UnityEngine.InputSystem.InputAction;
 
 namespace CakeEngineering
 {
@@ -19,147 +20,114 @@ namespace CakeEngineering
         [SerializeField]
         private LevelLoader _levelLoader;
 
-        private History<LevelState> _gridHistory;
-
+        [SerializeField]
         private PlayerInput _playerInput;
 
-        private InputAction _move;
+        private History<LevelState> _gridHistory;
 
-        private InputAction _undo;
-
-        private InputAction _select;
-
-        private bool _lock;
+        private float _lastInputTime;
 
         private List<Entity> _entities;
-
-        private bool _isInSelectState;
 
         private Vector2 _selectDirection;
 
         private void Awake()
         {
-            _lock = false;
-            _playerInput = new PlayerInput();
-            _move = _playerInput.Player.Move;
-            _undo = _playerInput.Player.Undo;
-            _select = _playerInput.Player.Select;
-            _isInSelectState = false;
             _selectDirection = Vector2.zero;
             _gridHistory = new History<LevelState>();
         }
 
         private void Start()
         {
+            _lastInputTime = Time.time;
             var entities = GetComponentsInChildren<Entity>();
             _entities = entities.ToList();
             var initialState = new LevelState(entities);
             _gridHistory.CreateNext(initialState);
             _selectBox.SetActive(false);
             UpdateAllEntities();
-            DisablePlayerControls();
-        }
-
-        private void OnEnable()
-        {
-            EnablePlayerControls();
-        }
-
-        private void OnDisable()
-        {
-            DisablePlayerControls();
-        }
-
-        public void EnablePlayerControls()
-        {
-            _move.Enable();
-            _undo.Enable();
-            _select.Enable();
-        }
-
-        public void DisablePlayerControls()
-        {
-            _move.Disable();
-            _undo.Disable();
-            _select.Disable();
         }
 
         private void Lock()
         {
-            _lock = true;
-            Invoke(nameof(Unlock), 0.2f);
+            _lastInputTime = Time.time;
         }
 
-        private void Unlock()
+        private bool CooldownIsActive()
         {
-            _lock = false;
+            return Time.time - _lastInputTime <= 0.13f;
         }
 
-        private void Update()
+        public void MovePlayer(CallbackContext callbackContext)
         {
-            var playerMovement = _move.ReadValue<Vector2>();
-            if (!_lock && playerMovement != Vector2.zero && (playerMovement.x == 0 || playerMovement.y == 0))
+            if (CooldownIsActive() || callbackContext.phase != InputActionPhase.Started)
+                return;
+            var movement = callbackContext.ReadValue<Vector2>();
+            _gridHistory.CreateNext((LevelState)_gridHistory.Current.Clone());
+            CurrentGridState[CurrentGridState.PlayerState.Position] = CurrentGridState.PlayerState.WithVelocity(movement);
+            RunAllSystems(movement);
+            UpdateAllEntities();
+            Lock();
+        }
+
+        public void ChooseSelectedEntity(CallbackContext callbackContext)
+        {
+            if (CooldownIsActive() || callbackContext.phase != InputActionPhase.Started)
+                return;
+            var movement = callbackContext.ReadValue<Vector2>();
+            if (movement != Vector2.zero && (movement.x == 0 || movement.y == 0))
             {
-                if (!_isInSelectState)
+                var playerPosition = CurrentGridState.PlayerState.Position;
+                if (CurrentGridState.HasEntityAt(playerPosition + movement))
                 {
-                    _gridHistory.CreateNext((LevelState) _gridHistory.Current.Clone());
-                    CurrentGridState[CurrentGridState.PlayerState.Position] = CurrentGridState.PlayerState.WithVelocity(playerMovement);
-                    RunAllSystems(playerMovement);
-                    UpdateAllEntities();
-                    Lock();
-                }
-                else
-                {
-                    var playerPosition = CurrentGridState.PlayerState.Position;
-                    if (CurrentGridState.HasEntityAt(playerPosition + playerMovement))
-                    {
-                        if (!_selectBox.activeSelf)
-                            _selectBox.SetActive(true);
-                        _selectDirection = playerMovement;
-                        _selectBox.transform.position = playerPosition + _selectDirection;
-                        Lock();
-                    }
-                }
-            }
-            else if (!_lock && _undo.IsPressed())
-            {
-                if (!_isInSelectState && _gridHistory.TryUndo())
-                {
-                    Lock();
-                    UpdateAllEntities();
-                }
-                else
-                {
-                    _isInSelectState = false;
-                    _selectBox.SetActive(false);
-                    Lock();
-                }
-            }
-            else if (!_lock && _select.IsPressed())
-            {
-                if (_isInSelectState && _selectDirection != Vector2.zero)
-                {
-                    var playerPosition = CurrentGridState.PlayerState.Position;
-                    _tagsScreen.firstEntity = CurrentGridState.PlayerState.Entity;
-                    _tagsScreen.secondEntity = CurrentGridState[playerPosition + _selectDirection].Entity;
-                    _gridHistory.CreateNext((LevelState) _gridHistory.Current.Clone());
-                    DisablePlayerControls();
-                    _tagsScreen.gameObject.SetActive(true);
-                    _selectBox.SetActive(false);
-                    _isInSelectState = false;
-                }
-                else
-                {
-                    _selectDirection = Vector2.zero;
-                    _isInSelectState = true;
+                    if (!_selectBox.activeSelf)
+                        _selectBox.SetActive(true);
+                    _selectDirection = movement;
+                    _selectBox.transform.position = playerPosition + movement;
                     Lock();
                 }
             }
         }
 
-        public void Undo()
+        public void Undo(CallbackContext callbackContext)
         {
+            if (CooldownIsActive() || callbackContext.phase != InputActionPhase.Started)
+                return;
             _gridHistory.TryUndo();
+            UpdateAllEntities();
+            Lock();
+        }
+
+        public void EnterSelectEntityState(CallbackContext callbackContext)
+        {
+            if (CooldownIsActive() || callbackContext.phase != InputActionPhase.Started)
+                return;
+            _playerInput.SwitchCurrentActionMap("Select");
+            _selectDirection = Vector2.zero;
+            Lock();
+        }
+
+        public void ExitSelectEntityState(CallbackContext callbackContext)
+        {
+            if (CooldownIsActive() || callbackContext.phase != InputActionPhase.Started)
+                return;
+            _playerInput.SwitchCurrentActionMap("Player");
+            if (_selectBox.activeSelf)
+                _selectBox.SetActive(false);
+            Lock();
+        }
+
+        public void SelectEntity(CallbackContext callbackContext)
+        {
+            if (CooldownIsActive() || callbackContext.phase != InputActionPhase.Started || _selectDirection == Vector2.zero)
+                return;
+            var playerPosition = CurrentGridState.PlayerState.Position;
+            _tagsScreen.firstEntity = CurrentGridState.PlayerState.Entity;
+            _tagsScreen.secondEntity = CurrentGridState[playerPosition + _selectDirection].Entity;
+            _gridHistory.CreateNext((LevelState)_gridHistory.Current.Clone());
+            _tagsScreen.gameObject.SetActive(true);
+            _selectBox.SetActive(false);
+            _playerInput.SwitchCurrentActionMap("UI");
         }
 
         private void RunAllSystems(Vector2 playerMovement)
@@ -177,7 +145,6 @@ namespace CakeEngineering
 
         public void Win()
         {
-            DisablePlayerControls();
             _levelLoader.TransitionToNextScene();
         }
     }
