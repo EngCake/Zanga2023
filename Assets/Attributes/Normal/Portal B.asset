@@ -13,6 +13,5 @@ MonoBehaviour:
   m_Name: Portal B
   m_EditorClassIdentifier: 
   Name: Portal B
-  Description: 
   Locked: 1
-  Active: 1
+  Opposite: {fileID: 0}
