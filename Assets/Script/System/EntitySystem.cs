@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace CakeEngineering
 {
-    public abstract class EntityAttributeSystem : MonoBehaviour
+    public abstract class EntitySystem : MonoBehaviour
     {
         protected GameManager _gameManager;
 

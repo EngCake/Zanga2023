@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace CakeEngineering
 {
-    public class BurningSystem : EntityAttributeSystem
+    public class BurningSystem : EntitySystem
     {
         [SerializeField]
         private EntityAttribute _burningAttribute;

@@ -8,10 +8,10 @@ namespace CakeEngineering
     public class GameManager : MonoBehaviour
     {
         [SerializeField]
-        private List<EntityAttributeSystem> _systems;
+        private List<EntitySystem> _systems;
 
         [SerializeField]
-        private TagsScreen _tagsScreen;
+        private AttributesScreen _tagsScreen;
 
         [SerializeField]
         private GameObject _selectBox;

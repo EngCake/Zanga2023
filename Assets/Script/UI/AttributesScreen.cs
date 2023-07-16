@@ -13,7 +13,7 @@ namespace CakeEngineering
         public int Row;
     }
 
-    public class TagsScreen : MonoBehaviour
+    public class AttributesScreen : MonoBehaviour
     {
         private static readonly int FIRST_COLUMN = 0;
 

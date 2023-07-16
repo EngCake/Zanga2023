@@ -3,7 +3,8 @@ using UnityEngine;
 
 namespace CakeEngineering
 {
-    public class PlayerMovementSystem : EntityAttributeSystem
+    public class 
+        MovementSystem : EntitySystem
     {
         private GridState _currentState;
 
