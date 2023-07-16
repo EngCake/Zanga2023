@@ -82,7 +82,7 @@ namespace CakeEngineering
         {
             var name = entityState.Entity.Name;
             var attributes = entityState.Attributes;
-            var listText = new StringBuilder($"<size=60>{name}</size>\n\n");
+            var listText = new StringBuilder($"<size=25>{name}</size>\n\n");
             for (var i = 0; i < attributes.Count; i++)
             {
                 var attribute = attributes[i];
