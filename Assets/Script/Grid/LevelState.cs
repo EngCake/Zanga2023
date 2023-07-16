@@ -6,16 +6,16 @@ using UnityEngine;
 namespace CakeEngineering
 {
     [Serializable]
-    public class GridState : ICloneable
+    public class LevelState : ICloneable
     {
         private readonly Dictionary<Vector2, EntityState> _grid;
 
-        private GridState()
+        private LevelState()
         {
             _grid = new Dictionary<Vector2, EntityState>();
         }
 
-        public GridState(Entity[] entities)
+        public LevelState(Entity[] entities)
         {
             _grid = new Dictionary<Vector2, EntityState>();
             foreach (var entity in entities)
@@ -46,7 +46,7 @@ namespace CakeEngineering
 
         public object Clone()
         {
-            var clone = new GridState();
+            var clone = new LevelState();
             foreach (var (position, entityState) in _grid)
             {
                 clone._grid[position] = (EntityState) entityState.Clone();

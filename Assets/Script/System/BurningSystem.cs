@@ -9,7 +9,7 @@ namespace CakeEngineering
 
         public override void Process()
         {
-            var currentState = (GridState) _gameManager.CurrentGridState.Clone();
+            var currentState = (LevelState) _gameManager.CurrentGridState.Clone();
             var nextState = _gameManager.CurrentGridState;
             foreach (var entityState in currentState.FindByAttribute("Burning"))
             {

@@ -4,11 +4,11 @@ namespace CakeEngineering
 {
     public abstract class EntitySystem : MonoBehaviour
     {
-        protected GameManager _gameManager;
+        protected LevelManager _gameManager;
 
         private void Awake()
         {
-            _gameManager = GetComponentInParent<GameManager>();
+            _gameManager = GetComponentInParent<LevelManager>();
         }
 
         public abstract void Process();

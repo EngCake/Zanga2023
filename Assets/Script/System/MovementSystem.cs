@@ -6,39 +6,21 @@ namespace CakeEngineering
     public class 
         MovementSystem : EntitySystem
     {
-        private GridState _currentState;
+        private LevelState _currentState;
 
-        private GridState _nextState;
+        private LevelState _nextState;
 
         public override void Process()
         {
-            _currentState = (GridState) _gameManager.CurrentGridState.Clone();
+            _currentState = (LevelState)_gameManager.CurrentGridState.Clone();
             _nextState = _gameManager.CurrentGridState;
-            var playerState = _currentState.PlayerState;
-            if (CanMoveEntity(playerState.Position, playerState.Velocity))
-            {
-                MoveEntity(playerState.Position, playerState.Velocity);
-                _currentState = (GridState) _nextState.Clone();
-            }
-            else
-            {
-                var playerVelocty = playerState.Velocity;
-                var playerVelocityRotated = new Vector2(playerVelocty.y, -playerVelocty.x);
-                ShakeEntity(_currentState.PlayerState.Position, playerVelocityRotated);
-            }
-            var horizontalEntitiesStates = _currentState.FindByAttribute("Moving Horizontally");
-            foreach (var horizontalEntityState in horizontalEntitiesStates)
-            {
-                if (horizontalEntityState.HasAttribute("Player"))
-                    continue;
-                var currentEntityPosition = horizontalEntityState.Position;
-                var currentEntityVelocity = horizontalEntityState.Velocity;
-                if (CanMoveEntity(currentEntityPosition, currentEntityVelocity))
-                    MoveEntity(currentEntityPosition, currentEntityVelocity);
-                else
-                    _nextState[currentEntityPosition] = horizontalEntityState.WithVelocity(-currentEntityVelocity);
-                _currentState = (GridState) _nextState.Clone();
-            }
+            MovePlayer();
+            MoveHorizontallyMovingEntities();
+            MoveVerticallyMovingEntities();
+        }
+
+        private void MoveVerticallyMovingEntities()
+        {
             var verticalEntitiesStates = _currentState.FindByAttribute("Moving Vertically");
             foreach (var verticalEntityState in verticalEntitiesStates)
             {
@@ -53,6 +35,39 @@ namespace CakeEngineering
             }
         }
 
+        private void MoveHorizontallyMovingEntities()
+        {
+            var horizontalEntitiesStates = _currentState.FindByAttribute("Moving Horizontally");
+            foreach (var horizontalEntityState in horizontalEntitiesStates)
+            {
+                if (horizontalEntityState.HasAttribute("Player"))
+                    continue;
+                var currentEntityPosition = horizontalEntityState.Position;
+                var currentEntityVelocity = horizontalEntityState.Velocity;
+                if (CanMoveEntity(currentEntityPosition, currentEntityVelocity))
+                    MoveEntity(currentEntityPosition, currentEntityVelocity);
+                else
+                    _nextState[currentEntityPosition] = horizontalEntityState.WithVelocity(-currentEntityVelocity);
+                _currentState = (LevelState)_nextState.Clone();
+            }
+        }
+
+        private void MovePlayer()
+        {
+            var playerState = _currentState.PlayerState;
+            if (CanMoveEntity(playerState.Position, playerState.Velocity))
+            {
+                MoveEntity(playerState.Position, playerState.Velocity);
+                _currentState = (LevelState)_nextState.Clone();
+            }
+            else
+            {
+                var playerVelocty = playerState.Velocity;
+                var playerVelocityRotated = new Vector2(playerVelocty.y, -playerVelocty.x);
+                ShakeEntity(_currentState.PlayerState.Position, playerVelocityRotated);
+            }
+        }
+
         private void ShakeEntity(Vector2 entityPosition, Vector2 direction)
         {
             var gameObject = _nextState[entityPosition].Entity.gameObject;
@@ -64,19 +79,17 @@ namespace CakeEngineering
                 .setRepeat(2);
         }
 
-        public bool CanMoveEntity(Vector2 entityPosition, Vector2 movement, bool isPushed = false)
+        public bool CanMoveEntity(Vector2 entityPosition, Vector2 movement, bool isPushed = false, bool previousEntityIsPlayer = false)
         {
             var currentEntityState = _currentState[entityPosition];
-            if (currentEntityState.HasAttribute("Breakable") && isPushed)
-            {
+            if (currentEntityState.HasAttribute("Breakable") && isPushed || currentEntityState.HasAttribute("Win") && previousEntityIsPlayer)
                 return true;
-            }
             else if (!isPushed && CanMoveByItself(currentEntityState) || isPushed && currentEntityState.HasAttribute("Pushable"))
             {
                 var nextPosition = entityPosition + movement;
                 if (!_currentState.HasEntityAt(nextPosition))
                     return true;
-                return CanMoveEntity(nextPosition, movement, true);
+                return CanMoveEntity(nextPosition, movement, true, currentEntityState.HasAttribute("Player"));
             }
             else if (currentEntityState.HasAttribute("Portal A") || currentEntityState.HasAttribute("Portal B"))
             {
@@ -84,7 +97,7 @@ namespace CakeEngineering
                 Vector2 nextPosition = otherPortalPosition + movement;
                 if (!_currentState.HasEntityAt(nextPosition))
                     return true;
-                return CanMoveEntity(nextPosition, movement);
+                return CanMoveEntity(nextPosition, movement, currentEntityState.HasAttribute("Player"));
             }
             return false;
         }
@@ -96,22 +109,31 @@ namespace CakeEngineering
             var isPushed = false;
             while (_currentState.HasEntityAt(currentPosition))
             {
-                var current = _nextState[currentPosition];
-                if ( isPushed && current.HasAttribute("Breakable") && !current.HasAttribute("Pushable") || isPushed && current.HasAttribute("Breakable") && !CanMoveEntity(currentPosition, movement) )
+                var currentEntity = _nextState[currentPosition];
+                var breakableUnpushable = isPushed && currentEntity.HasAttribute("Breakable") && !currentEntity.HasAttribute("Pushable");
+                var breakableUnmovable = isPushed && currentEntity.HasAttribute("Breakable") && !CanMoveEntity(currentPosition, movement);
+                if (breakableUnmovable || breakableUnpushable)
                 {
                     _nextState[currentPosition] = previousEntity;
                     previousEntity = null;
                     break;
                 }
-                else if ( current.HasAttribute("Pushable") || !current.HasAttribute("Portal A") && !current.HasAttribute("Portal B") )
+                else if (currentEntity.HasAttribute("Win") && previousEntity.HasAttribute("Player"))
+                {
+                    _nextState[currentPosition] = previousEntity;
+                    previousEntity = null;
+                    _gameManager.Win();
+                    break;
+                }
+                else if ( currentEntity.HasAttribute("Pushable") || !currentEntity.HasAttribute("Portal A") && !currentEntity.HasAttribute("Portal B") )
                 {
                     _nextState[currentPosition] = previousEntity;
                     currentPosition += movement;
-                    previousEntity = current.WithNewPosition(currentPosition);
+                    previousEntity = currentEntity.WithNewPosition(currentPosition);
                 }
                 else
                 {
-                    currentPosition = FindOtherPortalPosition(current) + movement;
+                    currentPosition = FindOtherPortalPosition(currentEntity) + movement;
                     previousEntity = previousEntity.WithNewPosition(currentPosition);
                 }
                 isPushed = true;

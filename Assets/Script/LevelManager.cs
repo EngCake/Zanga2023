@@ -5,7 +5,7 @@ using UnityEngine.InputSystem;
 
 namespace CakeEngineering
 {
-    public class GameManager : MonoBehaviour
+    public class LevelManager : MonoBehaviour
     {
         [SerializeField]
         private List<EntitySystem> _systems;
@@ -16,7 +16,7 @@ namespace CakeEngineering
         [SerializeField]
         private GameObject _selectBox;
 
-        private History<GridState> _gridHistory;
+        private History<LevelState> _gridHistory;
 
         private PlayerInput _playerInput;
 
@@ -43,14 +43,14 @@ namespace CakeEngineering
             _select = _playerInput.Player.Select;
             _isInSelectState = false;
             _selectDirection = Vector2.zero;
-            _gridHistory = new History<GridState>();
+            _gridHistory = new History<LevelState>();
         }
 
         private void Start()
         {
             var entities = GetComponentsInChildren<Entity>();
             _entities = entities.ToList();
-            var initialState = new GridState(entities);
+            var initialState = new LevelState(entities);
             _gridHistory.CreateNext(initialState);
             _selectBox.SetActive(false);
             UpdateAllEntities();
@@ -98,7 +98,7 @@ namespace CakeEngineering
             {
                 if (!_isInSelectState)
                 {
-                    _gridHistory.CreateNext((GridState) _gridHistory.Current.Clone());
+                    _gridHistory.CreateNext((LevelState) _gridHistory.Current.Clone());
                     CurrentGridState[CurrentGridState.PlayerState.Position] = CurrentGridState.PlayerState.WithVelocity(playerMovement);
                     RunAllSystems(playerMovement);
                     UpdateAllEntities();
@@ -138,7 +138,7 @@ namespace CakeEngineering
                     var playerPosition = CurrentGridState.PlayerState.Position;
                     _tagsScreen.firstEntity = CurrentGridState.PlayerState.Entity;
                     _tagsScreen.secondEntity = CurrentGridState[playerPosition + _selectDirection].Entity;
-                    _gridHistory.CreateNext((GridState) _gridHistory.Current.Clone());
+                    _gridHistory.CreateNext((LevelState) _gridHistory.Current.Clone());
                     DisablePlayerControler();
                     _tagsScreen.gameObject.SetActive(true);
                     _selectBox.SetActive(false);
@@ -169,6 +169,11 @@ namespace CakeEngineering
             _entities.ForEach(entity => entity.UpdateCurrentState());
         }
 
-        public GridState CurrentGridState => _gridHistory.Current;
+        public LevelState CurrentGridState => _gridHistory.Current;
+
+        public void Win()
+        {
+            Debug.Log("You win!");
+        }
     }
 }

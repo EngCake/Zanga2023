@@ -35,7 +35,7 @@ namespace CakeEngineering
 
         private SpriteRenderer _spriteRenderer;
 
-        private GameManager _gameManager;
+        private LevelManager _gameManager;
 
         private void Awake()
         {
@@ -44,7 +44,7 @@ namespace CakeEngineering
             _currentState = _initialState;
             _spriteRenderer = GetComponent<SpriteRenderer>();
             _spriteRenderer.sprite = _normalSprite;
-            _gameManager = GetComponentInParent<GameManager>();
+            _gameManager = GetComponentInParent<LevelManager>();
         }
 
         public void UpdateCurrentState()

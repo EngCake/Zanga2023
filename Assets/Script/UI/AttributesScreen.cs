@@ -20,7 +20,7 @@ namespace CakeEngineering
         private static readonly int SECOND_COLUMN = 1;
 
         [SerializeField]
-        private GameManager _gameManager;
+        private LevelManager _gameManager;
 
         public Entity firstEntity;
 
